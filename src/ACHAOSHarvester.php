@@ -281,7 +281,8 @@ abstract class ACHAOSHarvester {
 		
 		print("\tExtracting files:\n");
 		
-		$xml = $this->extractFiles($object, $externalObject, $extras);
+		$files = $this->extractFiles($object, $externalObject, $extras);
+		$extras['extractedFiles'] = $files;
 		
 		// TODO: Use the $externalObject to look up (or create) the internal CHAOS object to use.
 		// TODO: Run through all registrated $this->_xmlGenerators and $this->_fileExtractors
@@ -320,7 +321,8 @@ abstract class ACHAOSHarvester {
 	protected function extractFiles($object, $externalObject, &$extras) {
 		$result = array();
 		foreach($this->_fileExtractors as $extractor) {
-			$result[get_class($extractor)] = $extractor->process($this, $object, $externalObject, $extras);
+			$files = $extractor->process($this, $object, $externalObject, $extras);
+			$result[get_class($extractor)] = $files;
 		}
 		return $result;
 	}
