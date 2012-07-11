@@ -1,5 +1,6 @@
 <?php
-abstract class CHAOSFileExtractor {
+
+abstract class ACHAOSFileExtractor {
 	const PROGRESS_END_CHAR = '|';
 	/**
 	 * Returns a singleton intance of the class.
@@ -16,12 +17,12 @@ abstract class CHAOSFileExtractor {
 	/**
 	 * Process the DFI movieitem.
 	 * @param CHAOS\Portal\Client\PortalClient $chaosClient The CHAOS client to use for the importing.
-	 * @param dfi\DFIClient $dfiClient The DFI client to use for importing.
-	 * @param dfi\model\Item $movieItem The DFI movie item.
+	 * @param Object $externalClient The remote client to use for importing.
+	 * @param Object $externalObject The DFI movie item.
 	 * @param stdClass $object Representing the DKA program in the CHAOS service, of which the images should be added to.
 	 * @return array An array of processed files.
 	 */
-	public abstract function process($chaosClient, $dfiClient, $movieItem, $object);
+	public abstract function process($harvester, $object, $externalObject, &$extras);
 	
 	/**
 	 * Gets or creates a new file reference.
@@ -38,7 +39,7 @@ abstract class CHAOSFileExtractor {
 	 * @param string $folderPath
 	 * @return \CHAOS\Portal\Client\Data\ServiceResult
 	 */
-	protected function getOrCreateFile($chaosClient, $object, $parentFileID, $formatID, $destinationID, $filename, $originalFilename, $folderPath, $printProgress = true) {
+	protected function getOrCreateFile($harvester, $object, $parentFileID, $formatID, $destinationID, $filename, $originalFilename, $folderPath, $printProgress = true) {
 		$formatID = (int) $formatID;
 		// Check if it is on the $object's list of Files.
 		
@@ -62,7 +63,7 @@ abstract class CHAOSFileExtractor {
 		}
 		
 		// File is not known to the CHAOS system, creating it.
-		$response = $chaosClient->File()->Create($object->GUID, $parentFileID, $formatID, $destinationID, $filename, $originalFilename, $folderPath);
+		$response = $harvester->getCHAOSClient()->File()->Create($object->GUID, $parentFileID, $formatID, $destinationID, $filename, $originalFilename, $folderPath);
 		if(!$response->WasSuccess()) {
 			if($printProgress) {
 				echo "!";
@@ -72,7 +73,7 @@ abstract class CHAOSFileExtractor {
 			if($printProgress) {
 				echo "!";
 			}
-			throw new RuntimeException("Failed to create the file in the CHAOS service: ". $response->MCM()->Error()->Message());
+			throw new RuntimeException("Failed to create the file in the CHAOS service: (MCM error): ". $response->MCM()->Error()->Message());
 		} else {
 			if($printProgress) {
 				echo "+";

@@ -1,5 +1,5 @@
 <?php
-abstract class CHAOSXMLGenerator {
+abstract class ACHAOSMetadataGenerator {
 	
 	/**
 	 * Returns a singleton intance of the class.
@@ -19,7 +19,7 @@ abstract class CHAOSXMLGenerator {
 	 * @param boolean $validate Validate the generated XML agains a schema.
 	 * @return DOMDocument Representing the imported item as XML in a specific schema.
 	 */
-	public abstract function generateXML($input, $validate = false);
+	public abstract function generateXML($externalObject, &$extras);
 	
 	/**
 	 * Validates a DOM document using the loaded schema.
