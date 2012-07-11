@@ -39,6 +39,8 @@ abstract class ACHAOSHarvester {
 	 */
 	public $_chaos;
 	
+	protected $runtimeOptions;
+	
 	/**
 	 * This is a collection of CHAOSXMLGenerators to use when generating XML for a specific external object.
 	 * This should be filled with initialized objects of the CHAOSXMLGenerator class before the parent constructor is called. 
@@ -90,8 +92,8 @@ abstract class ACHAOSHarvester {
 			"CHAOS_FOLDER_ID" => "_CHAOSFolderID"
 	);
 	
-	public function __construct() {
-		$this->loadConfiguration();
+	public function __construct($args) {
+		$this->loadConfiguration($args);
 		$this->CHAOS_initialize();
 	}
 	
@@ -137,7 +139,7 @@ abstract class ACHAOSHarvester {
 	
 			// Starting on the real job at hand
 			$starttime = time();
-			$h = new $harvester_class();
+			$h = new $harvester_class($args);
 			
 			if(array_key_exists('range', $runtimeOptions)) {
 				$rangeParams = explode('-', $runtimeOptions['range']);
@@ -264,6 +266,8 @@ abstract class ACHAOSHarvester {
 	
 	protected abstract function initializeExtras(&$extras);
 	
+	protected abstract function shouldBeSkipped($externalObject);
+	
 	public abstract function getExternalClient();
 	
 	public function getCHAOSClient() {
@@ -273,36 +277,70 @@ abstract class ACHAOSHarvester {
 	protected function processSingle($externalObject) {
 		printf("Processing '%s'\n", $this->externalObjectToString($externalObject));
 		
+		$shouldBeSkipped = $this->shouldBeSkipped($externalObject);
+		if($shouldBeSkipped !== false) {
+			printf("\tSkipping this because '%s'\n", $shouldBeSkipped);
+			return;
+		}
+		
 		$object = $this->getOrCreateObject($externalObject);
 
-		// For data generated while processing.
-		$extras = array();
-		$this->initializeExtras($extras);
+		$skip = $shouldBeSkipped || array_key_exists('skip-processing', $this->runtimeOptions);
 		
-		print("\tExtracting files:\n");
+		if($skip) {
+			printf("\tSkipping ...\n");
+		} else {
+			// For data generated while processing.
+			$extras = array();
+			$this->initializeExtras($extras);
+			
+			print("\tExtracting files:\n");
+			
+			$files = $this->extractFiles($object, $externalObject, $extras);
+			$extras['extractedFiles'] = $files;
+			
+			// TODO: Use the $externalObject to look up (or create) the internal CHAOS object to use.
+			// TODO: Run through all registrated $this->_xmlGenerators and $this->_fileExtractors
+			
+			$xml = $this->generateMetadata($externalObject, $extras);
+			
+			$revisions = self::extractMetadataRevisions($object);
+			
+			foreach($xml as $schemaGUID => $metadata) {
+				// This is not implemented.
+				// $currentMetadata = $this->_chaos->Metadata()->Get($object->GUID, $schema->GUID, 'da');
+				//var_dump($currentMetadata);
+				$revision = array_key_exists($schemaGUID, $revisions) ? $revisions[$schemaGUID] : null;
+				printf("\tSetting '%s' metadata on the CHAOS object (overwriting revision %u): ", $schemaGUID, $revision);
+				timed();
+				$response = $this->_chaos->Metadata()->Set($object->GUID, $schemaGUID, 'da', $revision, $xml[$schemaGUID]->saveXML());
+				timed('chaos');
+				if(!$response->WasSuccess()) {
+					printf("Failed.\n");
+					throw new RuntimeException("Couldn't set the metadata on the CHAOS object.");
+				} else {
+					printf("Succeeded.\n");
+				}
+			}
+		}
 		
-		$files = $this->extractFiles($object, $externalObject, $extras);
-		$extras['extractedFiles'] = $files;
-		
-		// TODO: Use the $externalObject to look up (or create) the internal CHAOS object to use.
-		// TODO: Run through all registrated $this->_xmlGenerators and $this->_fileExtractors
-		
-		$xml = $this->generateMetadata($externalObject, $extras);
-		
-		$revisions = self::extractMetadataRevisions($object);
-		
-		foreach($xml as $schemaGUID => $metadata) {
-			// This is not implemented.
-			// $currentMetadata = $this->_chaos->Metadata()->Get($object->GUID, $schema->GUID, 'da');
-			//var_dump($currentMetadata);
-			$revision = array_key_exists($schemaGUID, $revisions) ? $revisions[$schemaGUID] : null;
-			printf("\tSetting '%s' metadata on the CHAOS object (overwriting revision %u): ", $schemaGUID, $revision);
+		if(array_key_exists('publish', $this->runtimeOptions) || array_key_exists('unpublish', $this->runtimeOptions)) {
+			$publish = array_key_exists('publish', $this->runtimeOptions);
+			$accessPointGUID = $publish ? $this->runtimeOptions['publish'] : $this->runtimeOptions['unpublish'];
+			
+			$start = null;
+			if($publish === true) {
+				$start = new DateTime();
+				printf("\tChanging the publish settings for %s to startDate = %s: ", $accessPointGUID, $start->format("Y-m-d H:i:s"));
+			} elseif($publish === false) {
+				printf("\tChanging the publish settings for %s to unpublished: ", $accessPointGUID);
+			}
 			timed();
-			$response = $this->_chaos->Metadata()->Set($object->GUID, $schemaGUID, 'da', $revision, $xml[$schemaGUID]->saveXML());
+			$response = $this->_chaos->Object()->SetPublishSettings($object->GUID, $accessPointGUID, $start);
 			timed('chaos');
-			if(!$response->WasSuccess()) {
+			if(!$response->WasSuccess() || !$response->MCM()->WasSuccess()) {
 				printf("Failed.\n");
-				throw new RuntimeException("Couldn't set the metadata on the CHAOS object.");
+				throw new RuntimeException("Couldn't set the publish settings on the CHAOS object.");
 			} else {
 				printf("Succeeded.\n");
 			}
@@ -474,7 +512,7 @@ abstract class ACHAOSHarvester {
 	 * @throws \Exception if the CONFIGURATION_PARAMETERS holds a value which is
 	 * not a member of the class. This should not be possible.
 	 */
-	public function loadConfiguration($config = null) {
+	public function loadConfiguration($args, $config = null) {
 		if($config == null) {
 			$config = $_SERVER; // Default to the server array.
 		}
@@ -488,6 +526,7 @@ abstract class ACHAOSHarvester {
 				$this->$fieldName = $config[$param];
 			}
 		}
+		$this->runtimeOptions = self::extractOptionsFromArguments($args);
 	}
 	
 	protected $progressTotal;
