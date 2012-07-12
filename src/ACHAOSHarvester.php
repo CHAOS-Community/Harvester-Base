@@ -203,18 +203,25 @@ abstract class ACHAOSHarvester {
 		$externals = $this->fetchRange($start, $count);
 
 		$failures = array();
-		$n = 1;
+		$n = 0;
 		if($externals !== null && count($externals) > 0) {
 			foreach($externals as $e) {
+				$n++;
 				$externalObject = null;
+				printf("[%u/%u]\n", $n, count($externals));
 				// Determine if the returned is a collection of objects or a collection of references (strings).
 				if(is_string($e)) {
-					// We got a reference, we need to fetch the object.
-					$externalObject = $this->fetchSingle($e);
+					try {
+						// We got a reference, we need to fetch the object.
+						$externalObject = $this->fetchSingle($e);
+					} catch (Exception $ex) {
+						printf("\tError fetching external object: %s\n", $ex->getMessage());
+						$failures[] = array("externalReference" => $e, "exception" => $ex);
+						continue; // Skip this.
+					}
 				} else {
 					$externalObject = $e;
 				}
-				printf("[%u/%u]\n", $n, count($externals));
 				
 				for($attempt = 1; $attempt <= 3; $attempt++) {
 					try {
@@ -236,7 +243,6 @@ abstract class ACHAOSHarvester {
 						}
 					}
 				}
-				$n++;
 			}
 		}
 		
@@ -245,7 +251,14 @@ abstract class ACHAOSHarvester {
 		} else {
 			printf("Done .. %u failures occurred:\n", count($failures));
 			foreach ($failures as $failure) {
-				printf("\t%s: %s\n", $this->externalObjectToString($failure["externalObject"]), $failure["exception"]->getMessage());
+				if(array_key_exists('externalObject', $failure)) {
+					$external = $this->externalObjectToString($failure["externalObject"]);
+				} elseif (array_key_exists('externalReference', $failure)) {
+					$external = $failure["externalReference"];
+				} else {
+					$external = '?';
+				}
+				printf("\t%s: %s\n", $external, $failure["exception"]->getMessage());
 			}
 		}
 		//$this->processMovies($start, $count);
