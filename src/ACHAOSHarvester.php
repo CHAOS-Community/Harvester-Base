@@ -171,15 +171,15 @@ abstract class ACHAOSHarvester {
 			echo "\n";
 			printf("Invalid arguments given: %s\n", $e->getMessage());
 			self::printUsage($args);
-			exit;
+			exit(1);
 		} catch (RuntimeException $e) {
 			echo "\n";
 			printf("An unexpected runtime error occured: %s\n", $e->getMessage());
-			exit;
+			exit(2);
 		} catch (Exception $e) {
 			echo "\n";
 			printf("Error occured in the harvester implementation: %s\n", $e);
-			exit;
+			exit(3);
 		}
 	
 		// If the handle to the harvester has not been deallocated already.
@@ -265,7 +265,7 @@ abstract class ACHAOSHarvester {
 	}
 	
 	protected function harvestSingle($externalId) {
-		$externalObject = $this->fetchSingle('http://nationalfilmografien.service.dfi.dk/movie.svc/'.$externalId);
+		$externalObject = $this->fetchSingle($externalId);
 		$this->processSingle($externalObject);
 	}
 	
@@ -485,6 +485,9 @@ abstract class ACHAOSHarvester {
 	 * Extract the revisions for the metadata currently associated with the object.
 	 */
 	public static function extractMetadataRevisions($object) {
+		if($object === null) {
+			throw new Exception('Cannot extract metadata revisions from a null object.');
+		}
 		$result = array();
 		foreach($object->Metadatas as $metadata) {
 			// The schema matches the metadata.
