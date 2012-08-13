@@ -400,7 +400,7 @@ abstract class ACHAOSImporter {
 		timed();
 		$this->CHAOS_authenticateSession();
 		$this->CHAOS_fetchMetadataSchemas();
-		$this->CHAOS_fetchObjectType();
+		//$this->CHAOS_fetchObjectType();
 		timed('chaos');
 		//$this->CHAOS_fetchDFIFolder();
 	}
@@ -440,7 +440,7 @@ abstract class ACHAOSImporter {
 		printf("Succeeded.\n");
 	}
 	
-	protected abstract function CHAOS_fetchObjectType();
+	// protected abstract function CHAOS_fetchObjectType();
 	
 	protected function CHAOS_fetchObjectTypeFromName($name) {
 		if(empty($name)) {

@@ -23,35 +23,39 @@
  * @link       https://github.com/CHAOS-Community/Harvester-Base
  * @since      Class available since Release 0.1
  */
+
+/**
+ * @deprecated Use the ACHAOSImporter instead, with the OBJECT_TYPE_ID configuration parameter instead.
+ */
 abstract class ADKACHAOSHarvester extends ACHAOSImporter {
 	
-	const DKA_OBJECT_TYPE_NAME = "DKA Program";
+// 	const DKA_OBJECT_TYPE_NAME = "DKA Program";
 	
-	/**
-	 * The DFI client to be used for communication with the DFI Service. 
-	 * @var DFIClient
-	 */
-	public $_dfi;
+// 	/**
+// 	 * The DFI client to be used for communication with the DFI Service. 
+// 	 * @var DFIClient
+// 	 */
+// 	public $_dfi;
 	
-	protected $_DKAObjectType;
+// 	protected $_DKAObjectType;
 	
-	/**
-	 * Fetches the DKA Program object type and stores it in the _DKAObjectType field.
-	 * @throws RuntimeException If it fails.
-	 */
-	protected function CHAOS_fetchObjectType() {
-		printf("Looking up the DKA Program type: ");
+// 	/**
+// 	 * Fetches the DKA Program object type and stores it in the _DKAObjectType field.
+// 	 * @throws RuntimeException If it fails.
+// 	 */
+// 	protected function CHAOS_fetchObjectType() {
+// 		printf("Looking up the DKA Program type: ");
 		
-		try {
-			$this->_DKAObjectType = $this->CHAOS_fetchObjectTypeFromName(self::DKA_OBJECT_TYPE_NAME);
-			if($this->_DKAObjectType === null) {
-				printf("Failed.\n");
-			} else {
-				printf("Succeeded, it has ID: %s\n", $this->_DKAObjectType->ID);
-			}
-		} catch(Exception $e) {
-			printf("Failed.\n");
-			throw new RuntimeException("Couldn't lookup the DKA object type for the DKA specific data.");
-		}
-	}
+// 		try {
+// 			$this->_DKAObjectType = $this->CHAOS_fetchObjectTypeFromName(self::DKA_OBJECT_TYPE_NAME);
+// 			if($this->_DKAObjectType === null) {
+// 				printf("Failed.\n");
+// 			} else {
+// 				printf("Succeeded, it has ID: %s\n", $this->_DKAObjectType->ID);
+// 			}
+// 		} catch(Exception $e) {
+// 			printf("Failed.\n");
+// 			throw new RuntimeException("Couldn't lookup the DKA object type for the DKA specific data.");
+// 		}
+// 	}
 }
