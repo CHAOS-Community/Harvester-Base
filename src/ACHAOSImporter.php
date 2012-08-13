@@ -97,6 +97,9 @@ abstract class ACHAOSImporter {
 		$this->CHAOS_initialize();
 	}
 	
+	/**
+	 * This destructs the harvester, this also unsets/destroys the chaos client.
+	 */
 	public function __destruct() {
 		unset($this->_chaos);
 	}
@@ -134,8 +137,8 @@ abstract class ACHAOSImporter {
 				} else {
 					throw new InvalidArgumentException("Given a range parameter was malformed.");
 				}
-			} elseif(array_key_exists('single-id', $runtimeOptions)) {
-				$externalID = intval($runtimeOptions['single-id']);
+			} elseif(array_key_exists('single', $runtimeOptions)) {
+				$externalID = intval($runtimeOptions['single']);
 				printf("Harvesting a single external object (id = %u).\n", $externalID);
 				$h->harvestSingle($externalID);
 				printf("Done harvesting a signle object.\n");
@@ -174,7 +177,7 @@ abstract class ACHAOSImporter {
 	}
 	
 	protected static function printUsage($args) {
-		printf("Usage:\n\t%s [--all|--single-id={dfi-id}|--range={start-row}-{end-row}] [--publish={access-point-guid}|--unpublish={access-point-guid}] --skip-processing\n", $args[0]);
+		printf("Usage:\n\t%s [--all|--single={external-id}|--range={start-row}-{end-row}] [--publish={access-point-guid}|--unpublish={access-point-guid}] --skip-processing\n", $args[0]);
 	}
 	
 	protected function harvestAll() {
