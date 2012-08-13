@@ -23,7 +23,7 @@
  * @link       https://github.com/CHAOS-Community/Harvester-Base
  * @since      Class available since Release 0.1
  */
-abstract class ADKACHAOSHarvester extends ACHAOSHarvester {
+abstract class ADKACHAOSHarvester extends ACHAOSImporter {
 	
 	const DKA_OBJECT_TYPE_NAME = "DKA Program";
 	

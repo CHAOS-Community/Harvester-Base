@@ -29,7 +29,7 @@ require_once("timed.php");
 
 use CHAOS\Portal\Client\PortalClient;
 
-abstract class ACHAOSHarvester {
+abstract class ACHAOSImporter {
 	
 	const PROCESS_RETRIES = 3;
 	
@@ -112,30 +112,7 @@ abstract class ACHAOSHarvester {
 	
 		try {
 			// Processing runtime options.
-				
 			$runtimeOptions = self::extractOptionsFromArguments($args);
-			
-			// TODO: Remember to move the behaviour of these parameters directly into the process methods.
-			/*
-			$publish = null;
-			$publishAccessPointGUID = null;
-			$skipProcessing = null;
-			if(array_key_exists('publish', $runtimeOptions)) {
-				$publishAccessPointGUID = $runtimeOptions['publish'];
-				$publish = true;
-			}
-			if(array_key_exists('just-publish', $runtimeOptions)) {
-				$publishAccessPointGUID = $runtimeOptions['just-publish'];
-				$skipProcessing = true;
-				$publish = true;
-			}
-			if($publish === true && array_key_exists('unpublish', $runtimeOptions)) {
-				throw new InvalidArgumentException("Cannot have both publish or just-publish and unpublish options sat.");
-			} elseif(array_key_exists('unpublish', $runtimeOptions)) {
-				$publishAccessPointGUID = $runtimeOptions['unpublish'];
-				$publish = false;
-			}
-			*/
 	
 			// Starting on the real job at hand
 			$starttime = time();
@@ -169,16 +146,16 @@ abstract class ACHAOSHarvester {
 			}
 		} catch(InvalidArgumentException $e) {
 			echo "\n";
-			printf("Invalid arguments given: %s\n", $e->getMessage());
+			self::error_log(sprintf("[!] Invalid arguments given: %s\n", $e->getMessage()));
 			self::printUsage($args);
 			exit(1);
 		} catch (RuntimeException $e) {
 			echo "\n";
-			printf("An unexpected runtime error occured: %s\n", $e->getMessage());
+			self::error_log(sprintf("[!] Something went wrong: %s\n", $e->getMessage()));
 			exit(2);
 		} catch (Exception $e) {
 			echo "\n";
-			printf("Error occured in the harvester implementation: %s\n", $e);
+			self::error_log(sprintf("[!] Error occured in the harvester implementation: %s\n", $e));
 			exit(3);
 		}
 	
@@ -189,6 +166,11 @@ abstract class ACHAOSHarvester {
 	
 		$elapsed = time() - $starttime;
 		timed_print();
+	}
+	
+	protected static function error_log($message) {
+		//error_log($message);
+		echo $message;
 	}
 	
 	protected static function printUsage($args) {
@@ -205,39 +187,36 @@ abstract class ACHAOSHarvester {
 		$failures = array();
 		$n = 0;
 		if($externals !== null && count($externals) > 0) {
-			foreach($externals as $e) {
+			foreach($externals as $external) {
 				$n++;
 				$externalObject = null;
 				printf("[%u/%u]\n", $n, count($externals));
 				// Determine if the returned is a collection of objects or a collection of references (strings).
-				if(is_string($e)) {
-					try {
-						// We got a reference, we need to fetch the object.
-						$externalObject = $this->fetchSingle($e);
-					} catch (Exception $ex) {
-						printf("\tError fetching external object: %s\n", $ex->getMessage());
-						$failures[] = array("externalReference" => $e, "exception" => $ex);
-						continue; // Skip this.
-					}
-				} else {
-					$externalObject = $e;
-				}
 				
 				for($attempt = 1; $attempt <= 3; $attempt++) {
 					try {
+						// TODO: Check that this actually works.
+						if(is_string($external)) {
+							// We got a reference, we need to fetch the object.
+							$externalObject = $this->fetchSingle($external);
+						} else {
+							$externalObject = $external;
+						}
 						$this->processSingle($externalObject);
 						
 						break; // Break the retry loop.
 					} catch(Exception $e) {
 						if(strstr($e->getMessage(), 'Session has expired') !== false) {
-							printf("[!] Session expired: Creating a new session and trying again.\n");
+							self::error_log(sprintf("[!] Session expired: Creating a new session and trying again.\n"));
 							// Reauthenticate!
 							$this->CHAOS_initialize();
+						} else {
+							self::error_log(sprintf("\t[!] An error occured: \"%s\"\n", $e->getMessage()));
 						}
 						
 						// An error occured.
 						if($attempt === self::PROCESS_RETRIES) {
-							printf("[!] Exception thrown after ".self::PROCESS_RETRIES." retries: ".$e->getMessage()."\n");
+							self::error_log(sprintf("\t[!] Exception thrown after %u retries: \"%s\" in %s:%u\n", self::PROCESS_RETRIES, $e->getMessage(), $e->getFile(), $e->getLine()));
 							// For the third time.
 							$failures[] = array("externalObject" => $externalObject, "exception" => $e);
 						}
@@ -385,7 +364,7 @@ abstract class ACHAOSHarvester {
 	 * @throws Exception if $validateSchema is true and the validation fails.
 	 * @return DOMDocument Representing the DFI movie in the DKA Program specific schema.
 	 */
-	/** @deprecated Use a method on the abstract ACHAOSHarvester instead. */
+	/** @deprecated Use a method on the abstract ACHAOSImporter instead. */
 	protected function generateMetadata($externalObject, &$extras) {
 		$result = array();
 		foreach($this->_metadataGenerators as $generator) {
@@ -431,6 +410,9 @@ abstract class ACHAOSHarvester {
 		printf("Authenticating the session using email %s: ", $this->_CHAOSEmail);
 		$result = $this->_chaos->EmailPassword()->Login($this->_CHAOSEmail, $this->_CHAOSPassword);
 		if(!$result->WasSuccess()) {
+			printf("Failed.\n");
+			throw new \Exception("Couldn't authenticate the session, error in request.");
+		} elseif(!$result->EmailPassword()->WasSuccess()) {
 			printf("Failed.\n");
 			throw new \RuntimeException("Couldn't authenticate the session, please check the CHAOS_EMAIL and CHAOS_PASSWORD parameters.");
 		} else {
