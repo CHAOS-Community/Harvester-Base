@@ -1,9 +1,9 @@
 <?php
-abstract class ACHAOSMetadataGenerator {
+abstract class AChaosMetadataGenerator {
 	
 	/**
 	 * Returns a singleton intance of the class.
-	 * @return CHAOSXMLGenerator
+	 * @return ChaosXMLGenerator
 	 */
 	public static function instance() {
 		$clazz = get_called_class();
@@ -37,13 +37,13 @@ abstract class ACHAOSMetadataGenerator {
 	
 	/**
 	 * Sets the schema source fetching it from a chaos system.
-	 * @param CHAOS\Portal\Client\PortalClient $chaosClient
+	 * @param Chaos\Portal\Client\PortalClient $chaosClient
 	 * @param string $schemaGUID
 	 */
 	public function fetchSchemaFromGUID($chaosClient, $schemaGUID) {
 		$response = $chaosClient->MetadataSchema()->Get($schemaGUID);
 		if(!$response->WasSuccess() || !$response->MCM()->WasSuccess() || $response->MCM()->Count() < 1) {
-			throw new RuntimeException("Failed to fetch XML schemas from the CHAOS system, for schema GUID '$schemaGUID'.");
+			throw new RuntimeException("Failed to fetch XML schemas from the Chaos system, for schema GUID '$schemaGUID'.");
 		}
 		$schemas = $response->MCM()->Results();
 		$this->setSchemaSource($schemas[0]->SchemaXML);
@@ -51,7 +51,7 @@ abstract class ACHAOSMetadataGenerator {
 	
 	/**
 	 * Sets the schema source fetching it from a chaos system.
-	 * @param CHAOS\Portal\Client\PortalClient $chaosClient
+	 * @param Chaos\Portal\Client\PortalClient $chaosClient
 	 */
 	abstract public function fetchSchema($chaosClient);
 	

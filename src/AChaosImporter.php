@@ -1,6 +1,6 @@
 <?php
 /**
- * This abstract harvester copies information into a CHAOS service.
+ * This abstract harvester copies information into a Chaos service.
  *
  * LICENSE: This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -29,12 +29,12 @@ require_once("timed.php");
 
 use CHAOS\Portal\Client\PortalClient;
 
-abstract class ACHAOSImporter {
+abstract class AChaosImporter {
 	
 	const PROCESS_RETRIES = 3;
 	
 	/**
-	 * The CHAOS Portal client to be used for communication with the CHAOS Service.
+	 * The Chaos Portal client to be used for communication with the Chaos Service.
 	 * @var PortalClient
 	 */
 	public $_chaos;
@@ -42,42 +42,42 @@ abstract class ACHAOSImporter {
 	protected $runtimeOptions;
 	
 	/**
-	 * This is a collection of CHAOSXMLGenerators to use when generating XML for a specific external object.
-	 * This should be filled with initialized objects of the CHAOSXMLGenerator class before the parent constructor is called. 
-	 * @var CHAOSXMLGenerator[]
+	 * This is a collection of ChaosXMLGenerators to use when generating XML for a specific external object.
+	 * This should be filled with initialized objects of the ChaosXMLGenerator class before the parent constructor is called. 
+	 * @var ChaosXMLGenerator[]
 	 */
 	protected $_metadataGenerators = array();
 	
 	/**
-	 * This is a collection of CHAOSFileExtractors to use when generating files for the specific external object.
-	 * This should be filled with initialized objects of the CHAOSFileExtractors class before the parent constructor is called.
-	 * @var CHAOSFileExtractor[]
+	 * This is a collection of ChaosFileExtractors to use when generating files for the specific external object.
+	 * This should be filled with initialized objects of the ChaosFileExtractors class before the parent constructor is called.
+	 * @var ChaosFileExtractor[]
 	 */
 	protected $_fileExtractors = array();
 	
 	/**
-	 * The generated unique ID of the CHAOS Client.
+	 * The generated unique ID of the Chaos Client.
 	 * (can be generated at http://www.guidgenerator.com/)
 	 * @var string
 	 */
-	protected $_CHAOSClientGUID;
+	protected $_ChaosClientGUID;
 	/**
-	 * The URL of the CHAOS service.
+	 * The URL of the Chaos service.
 	 * @var string
 	 */
-	protected $_CHAOSURL;
+	protected $_ChaosURL;
 	/**
-	 * The email to be used to authenticate sessions from the CHAOS service.
+	 * The email to be used to authenticate sessions from the Chaos service.
 	 * @var string
 	 */
-	protected $_CHAOSEmail;
+	protected $_ChaosEmail;
 	/**
-	 * The password to be used to authenticate sessions from the CHAOS service.
+	 * The password to be used to authenticate sessions from the Chaos service.
 	 * @var string
 	 */
-	protected $_CHAOSPassword;
+	protected $_ChaosPassword;
 	
-	protected $_CHAOSFolderID;
+	protected $_ChaosFolderID;
 	
 	/**
 	 * An associative array describing the configuration parameters for the harvester.
@@ -85,16 +85,16 @@ abstract class ACHAOSImporter {
 	 * @var array[string]string
 	 */
 	protected $_CONFIGURATION_PARAMETERS = array(
-			"CHAOS_CLIENT_GUID" => "_CHAOSClientGUID",
-			"CHAOS_URL" => "_CHAOSURL",
-			"CHAOS_EMAIL" => "_CHAOSEmail",
-			"CHAOS_PASSWORD" => "_CHAOSPassword",
-			"CHAOS_FOLDER_ID" => "_CHAOSFolderID"
+			"CHAOS_CLIENT_GUID" => "_ChaosClientGUID",
+			"CHAOS_URL" => "_ChaosURL",
+			"CHAOS_EMAIL" => "_ChaosEmail",
+			"CHAOS_PASSWORD" => "_ChaosPassword",
+			"CHAOS_FOLDER_ID" => "_ChaosFolderID"
 	);
 	
 	public function __construct($args) {
 		$this->loadConfiguration($args);
-		$this->CHAOS_initialize();
+		$this->ChaosInitialize();
 	}
 	
 	/**
@@ -180,6 +180,22 @@ abstract class ACHAOSImporter {
 		printf("Usage:\n\t%s [--all|--single={external-id}|--range={start-row}-{end-row}] [--publish={access-point-guid}|--unpublish={access-point-guid}] --skip-processing\n", $args[0]);
 	}
 	
+	protected abstract function fetchRange($start, $count);
+	
+	protected abstract function fetchSingle($reference);
+	
+	protected abstract function externalObjectToString($externalObject);
+	
+	protected abstract function initializeExtras(&$extras);
+	
+	protected abstract function shouldBeSkipped($externalObject);
+	
+	protected abstract function generateChaosQuery($externalObject);
+	
+	protected abstract function getChaosObjectTypeID();
+	
+	public abstract function getExternalClient();
+	
 	protected function harvestAll() {
 		$this->harvestRange();
 	}
@@ -212,7 +228,7 @@ abstract class ACHAOSImporter {
 						if(strstr($e->getMessage(), 'Session has expired') !== false) {
 							self::error_log(sprintf("[!] Session expired: Creating a new session and trying again.\n"));
 							// Reauthenticate!
-							$this->CHAOS_initialize();
+							$this->ChaosInitialize();
 						} else {
 							self::error_log(sprintf("\t[!] An error occured: \"%s\"\n", $e->getMessage()));
 						}
@@ -251,21 +267,7 @@ abstract class ACHAOSImporter {
 		$this->processSingle($externalObject);
 	}
 	
-	protected abstract function fetchRange($start, $count);
-	
-	protected abstract function fetchSingle($reference);
-	
-	protected abstract function externalObjectToString($externalObject);
-	
-	protected abstract function getOrCreateObject($externalObject);
-	
-	protected abstract function initializeExtras(&$extras);
-	
-	protected abstract function shouldBeSkipped($externalObject);
-	
-	public abstract function getExternalClient();
-	
-	public function getCHAOSClient() {
+	public function getChaosClient() {
 		return $this->_chaos;
 	}
 	
@@ -294,7 +296,7 @@ abstract class ACHAOSImporter {
 			$files = $this->extractFiles($object, $externalObject, $extras);
 			$extras['extractedFiles'] = $files;
 			
-			// TODO: Use the $externalObject to look up (or create) the internal CHAOS object to use.
+			// TODO: Use the $externalObject to look up (or create) the internal Chaos object to use.
 			// TODO: Run through all registrated $this->_xmlGenerators and $this->_fileExtractors
 			
 			$xml = $this->generateMetadata($externalObject, $extras);
@@ -306,13 +308,13 @@ abstract class ACHAOSImporter {
 				// $currentMetadata = $this->_chaos->Metadata()->Get($object->GUID, $schema->GUID, 'da');
 				//var_dump($currentMetadata);
 				$revision = array_key_exists($schemaGUID, $revisions) ? $revisions[$schemaGUID] : null;
-				printf("\tSetting '%s' metadata on the CHAOS object (overwriting revision %u): ", $schemaGUID, $revision);
+				printf("\tSetting '%s' metadata on the Chaos object (overwriting revision %u): ", $schemaGUID, $revision);
 				timed();
 				$response = $this->_chaos->Metadata()->Set($object->GUID, $schemaGUID, 'da', $revision, $xml[$schemaGUID]->saveXML());
 				timed('chaos');
 				if(!$response->WasSuccess()) {
 					printf("Failed.\n");
-					throw new RuntimeException("Couldn't set the metadata on the CHAOS object.");
+					throw new RuntimeException("Couldn't set the metadata on the Chaos object.");
 				} else {
 					printf("Succeeded.\n");
 				}
@@ -335,13 +337,55 @@ abstract class ACHAOSImporter {
 			timed('chaos');
 			if(!$response->WasSuccess() || !$response->MCM()->WasSuccess()) {
 				printf("Failed.\n");
-				throw new RuntimeException("Couldn't set the publish settings on the CHAOS object.");
+				throw new RuntimeException("Couldn't set the publish settings on the Chaos object.");
 			} else {
 				printf("Succeeded.\n");
 			}
 		}
 		
 		printf("\tDone processing a single external object.\n");
+	}
+	
+	protected function getOrCreateObject($externalObject) {
+		$query = $this->generateChaosQuery($externalObject);
+		$this->getChaosObjectTypeID();
+		
+		if(empty($query) || !is_string($query)) {
+			throw new Exception("The implemented class returned an empty query");
+		}
+		
+		timed();
+		$response = $this->_chaos->Object()->Get($query, "DateCreated+desc", null, 0, 100, true, true);
+		timed('chaos');
+		
+		if(!$response->WasSuccess()) {
+			throw new RuntimeException("Couldn't complete the request for a movie: (Request error) ". $response->Error()->Message());
+		} else if(!$response->MCM()->WasSuccess()) {
+			throw new RuntimeException("Couldn't complete the request for a movie: (MCM error) ". $response->MCM()->Error()->Message());
+		}
+		
+		$results = $response->MCM()->Results();
+		
+		// If it's not there, create it.
+		if($response->MCM()->TotalCount() == 0) {
+			printf("\tFound a film in the DFI service which is not already represented by a Chaos object.\n");
+			timed();
+			$response = $this->_chaos->Object()->Create($this->_DKAObjectType->ID, $this->_ChaosFolderID);
+			timed('chaos');
+			if($response == null) {
+				throw new RuntimeException("Couldn't create a DKA Object: response object was null.");
+			} else if(!$response->WasSuccess()) {
+				throw new RuntimeException("Couldn't create a DKA Object: ". $response->Error()->Message());
+			} else if(!$response->MCM()->WasSuccess()) {
+				throw new RuntimeException("Couldn't create a DKA Object: ". $response->MCM()->Error()->Message());
+			} else if ($response->MCM()->TotalCount() != 1) {
+				throw new RuntimeException("Couldn't create a DKA Object .. No errors but no object created.");
+			}
+			$results = $response->MCM()->Results();
+		} else {
+			printf("\tReusing Chaos object with GUID = %s.\n", $results[0]->GUID);
+		}
+		return $results[0];
 	}
 	
 	/**
@@ -367,7 +411,7 @@ abstract class ACHAOSImporter {
 	 * @throws Exception if $validateSchema is true and the validation fails.
 	 * @return DOMDocument Representing the DFI movie in the DKA Program specific schema.
 	 */
-	/** @deprecated Use a method on the abstract ACHAOSImporter instead. */
+	/** @deprecated Use a method on the abstract AChaosImporter instead. */
 	protected function generateMetadata($externalObject, &$extras) {
 		$result = array();
 		foreach($this->_metadataGenerators as $generator) {
@@ -377,41 +421,41 @@ abstract class ACHAOSImporter {
 	}
 	
 	/**
-	 * Initialize the CHAOS part of the harvester.
+	 * Initialize the Chaos part of the harvester.
 	 * This involves fetching a session from the service,
 	 * authenticating it,
 	 * fetching the metadata schema for the DKA Program content,
-	 * fetching the object type (DKA Program) to identify its id on the CHAOS service,
+	 * fetching the object type (DKA Program) to identify its id on the Chaos service,
 	 * @throws \RuntimeException If any service call fails. This might be due to an unadvailable service,
 	 * or an unenticipated change in the protocol.
 	 */
-	protected function CHAOS_initialize() {
-		printf("Creating a session for the CHAOS service on %s using clientGUID %s: ", $this->_CHAOSURL, $this->_CHAOSClientGUID);
+	protected function ChaosInitialize() {
+		printf("Creating a session for the Chaos service on %s using clientGUID %s: ", $this->_ChaosURL, $this->_ChaosClientGUID);
 		// Create a new client, a session is automaticly created.
 		timed();
-		$this->_chaos = new PortalClient($this->_CHAOSURL, $this->_CHAOSClientGUID);
+		$this->_chaos = new PortalClient($this->_ChaosURL, $this->_ChaosClientGUID);
 		timed('chaos');
 		if(!$this->_chaos->HasSession()) {
 			printf("Failed.\n");
-			throw new \RuntimeException("Couldn't establish a session with the CHAOS service, please check the CHAOS_URL configuration parameter.");
+			throw new \RuntimeException("Couldn't establish a session with the Chaos service, please check the CHAOS_URL configuration parameter.");
 		} else {
 			printf("Succeeded: SessionGUID is %s\n", $this->_chaos->SessionGUID());
 		}
 		timed();
-		$this->CHAOS_authenticateSession();
-		$this->CHAOS_fetchMetadataSchemas();
+		$this->ChaosAuthenticateSession();
+		$this->ChaosFetchMetadataSchemas();
 		//$this->CHAOS_fetchObjectType();
 		timed('chaos');
 		//$this->CHAOS_fetchDFIFolder();
 	}
 	
 	/**
-	 * Authenticate the CHAOS session using the environment variables for email and password.
+	 * Authenticate the Chaos session using the environment variables for email and password.
 	 * @throws \RuntimeException If the authentication fails.
 	 */
-	protected function CHAOS_authenticateSession() {
-		printf("Authenticating the session using email %s: ", $this->_CHAOSEmail);
-		$result = $this->_chaos->EmailPassword()->Login($this->_CHAOSEmail, $this->_CHAOSPassword);
+	protected function ChaosAuthenticateSession() {
+		printf("Authenticating the session using email %s: ", $this->_ChaosEmail);
+		$result = $this->_chaos->EmailPassword()->Login($this->_ChaosEmail, $this->_ChaosPassword);
 		if(!$result->WasSuccess()) {
 			printf("Failed.\n");
 			throw new \Exception("Couldn't authenticate the session, error in request.");
@@ -427,12 +471,12 @@ abstract class ACHAOSImporter {
 	 * Fetches the DKA Program metadata schema and stores it in the _DKAMetadataSchema field.
 	 * @throws \RuntimeException If it fails.
 	 */
-	protected function CHAOS_fetchMetadataSchemas() {
+	protected function ChaosFetchMetadataSchemas() {
 		printf("Fetching metadata %u schemas: ", count($this->_metadataGenerators));
 	
 		// Looping throug every XML generator.
 		foreach($this->_metadataGenerators as $generator) {
-			if(is_subclass_of($generator, 'ACHAOSMetadataGenerator')) {
+			if(is_subclass_of($generator, 'AChaosMetadataGenerator')) {
 				 $generator->fetchSchema($this->_chaos);
 			}
 		}
@@ -442,7 +486,7 @@ abstract class ACHAOSImporter {
 	
 	// protected abstract function CHAOS_fetchObjectType();
 	
-	protected function CHAOS_fetchObjectTypeFromName($name) {
+	protected function ChaosFetchObjectTypeFromName($name) {
 		if(empty($name)) {
 			throw new InvalidArgumentException("The name of the object type has to be sat.");
 		}
