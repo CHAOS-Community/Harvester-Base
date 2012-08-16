@@ -2,18 +2,6 @@
 abstract class AChaosMetadataGenerator {
 	
 	/**
-	 * Returns a singleton intance of the class.
-	 * @return ChaosXMLGenerator
-	 */
-	public static function instance() {
-		$clazz = get_called_class();
-		if($clazz::$singleton == null) {
-			$clazz::$singleton = new $clazz();
-		}
-		return $clazz::$singleton;
-	}
-	
-	/**
 	 * Generate XML from some import-specific object.
 	 * @param unknown_type $input
 	 * @param boolean $validate Validate the generated XML agains a schema.
@@ -37,7 +25,7 @@ abstract class AChaosMetadataGenerator {
 	
 	/**
 	 * Sets the schema source fetching it from a chaos system.
-	 * @param Chaos\Portal\Client\PortalClient $chaosClient
+	 * @param CHAOS\Portal\Client\PortalClient $chaosClient
 	 * @param string $schemaGUID
 	 */
 	public function fetchSchemaFromGUID($chaosClient, $schemaGUID) {
@@ -51,7 +39,7 @@ abstract class AChaosMetadataGenerator {
 	
 	/**
 	 * Sets the schema source fetching it from a chaos system.
-	 * @param Chaos\Portal\Client\PortalClient $chaosClient
+	 * @param CHAOS\Portal\Client\PortalClient $chaosClient
 	 */
 	abstract public function fetchSchema($chaosClient);
 	

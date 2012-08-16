@@ -186,7 +186,7 @@ abstract class AChaosImporter {
 	
 	protected abstract function externalObjectToString($externalObject);
 	
-	protected abstract function initializeExtras(&$extras);
+	protected abstract function initializeExtras($externalObject, &$extras);
 	
 	protected abstract function shouldBeSkipped($externalObject);
 	
@@ -289,7 +289,7 @@ abstract class AChaosImporter {
 		} else {
 			// For data generated while processing.
 			$extras = array();
-			$this->initializeExtras($extras);
+			$this->initializeExtras($externalObject, $extras);
 			
 			print("\tExtracting files:\n");
 			
@@ -515,7 +515,7 @@ abstract class AChaosImporter {
 	 */
 	public static function extractMetadataRevisions($object) {
 		if($object === null) {
-			throw new Exception('Cannot extract metadata revisions from a null object.');
+			throw new Exception('Cannot extract metadata revisions from a null object, is the getOrCreateObject method implemented correctly?');
 		}
 		$result = array();
 		foreach($object->Metadatas as $metadata) {

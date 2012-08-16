@@ -2,21 +2,10 @@
 
 abstract class AChaosFileExtractor {
 	const PROGRESS_END_CHAR = '|';
-	/**
-	 * Returns a singleton intance of the class.
-	 * @return ChaosFileExtractor
-	 */
-	public static function instance() {
-		$clazz = get_called_class();
-		if($clazz::$singleton == null) {
-			$clazz::$singleton = new $clazz();
-		}
-		return $clazz::$singleton;
-	}
 	
 	/**
 	 * Process the DFI movieitem.
-	 * @param Chaos\Portal\Client\PortalClient $chaosClient The Chaos client to use for the importing.
+	 * @param CHAOS\Portal\Client\PortalClient $chaosClient The Chaos client to use for the importing.
 	 * @param Object $externalClient The remote client to use for importing.
 	 * @param Object $externalObject The DFI movie item.
 	 * @param stdClass $object Representing the DKA program in the Chaos service, of which the images should be added to.
@@ -29,7 +18,7 @@ abstract class AChaosFileExtractor {
 	 * If the file is already present on the system it simply returns the file.
 	 * NB: This is not correctly implemented yet, it will simply create a new file no matter what.
 	 * This is due to the state of the Chaos PHP clients implementation state.
-	 * @param Chaos\Portal\Client\PortalClient $chaosClient The client to use for the importation.
+	 * @param CHAOS\Portal\Client\PortalClient $chaosClient The client to use for the importation.
 	 * @param stdClass $objectGUID
 	 * @param int|null $parentFileID The FileID of an original file this file was created from, otherwise null.
 	 * @param int $formatID
@@ -37,7 +26,7 @@ abstract class AChaosFileExtractor {
 	 * @param string $filename
 	 * @param string $originalFilename
 	 * @param string $folderPath
-	 * @return \Chaos\Portal\Client\Data\ServiceResult
+	 * @return \CHAOS\Portal\Client\Data\ServiceResult
 	 */
 	protected function getOrCreateFile($harvester, $object, $parentFileID, $formatID, $destinationID, $filename, $originalFilename, $folderPath, $printProgress = true) {
 		if($object == null) {
