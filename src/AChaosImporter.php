@@ -247,6 +247,7 @@ abstract class AChaosImporter {
 						}
 					}
 				}
+				$this->ChaosKeepSessionAlive();
 			}
 		}
 		
@@ -457,6 +458,7 @@ abstract class AChaosImporter {
 		//$this->CHAOS_fetchObjectType();
 		timed('chaos');
 		//$this->CHAOS_fetchDFIFolder();
+		$_lastSessionUpdate = time();
 	}
 	
 	/**
@@ -517,6 +519,22 @@ abstract class AChaosImporter {
 			throw new RuntimeException("Couldn't find the '$name' object type.");
 		} else {
 			return $result;
+		}
+	}
+	
+	const SESSION_UPDATE_INTERVAL = 900; // Every 15 minutes.
+	protected $_lastSessionUpdate;
+	protected function ChaosKeepSessionAlive() {
+		$now = time();
+		if($this->_lastSessionUpdate == null || $this->_lastSessionUpdate + self::SESSION_UPDATE_INTERVAL < $now) {
+			printf("Updating chaos session: ");
+			$response = $this->_chaos->Session()->Update();
+			if($response->WasSuccess() && $response->Portal()->WasSuccess()) {
+				printf("Success.\n");
+				$this->_lastSessionUpdate = $now;
+			} else {
+				printf("Failed.\n");
+			}
 		}
 	}
 	
