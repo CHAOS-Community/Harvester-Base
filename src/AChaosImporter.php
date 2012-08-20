@@ -328,8 +328,6 @@ abstract class AChaosImporter {
 					printf("Succeeded.\n");
 				}
 			}
-			printf("Finished parsing CHAOS-object: %s\n", $object->GUID);
-			exit;
 		}
 		
 		if(array_key_exists('publish', $this->runtimeOptions) || array_key_exists('unpublish', $this->runtimeOptions)) {
