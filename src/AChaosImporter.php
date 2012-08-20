@@ -317,7 +317,7 @@ abstract class AChaosImporter {
 				$revision = array_key_exists($schemaGUID, $revisions) ? $revisions[$schemaGUID] : null;
 				printf("\tSetting '%s' metadata on the Chaos object (overwriting revision %u): ", $schemaGUID, $revision);
 				$rawXML = $xml[$schemaGUID]->saveXML();
-				echo $rawXML;
+				//echo $rawXML;
 				timed();
 				$response = $this->_chaos->Metadata()->Set($object->GUID, $schemaGUID, 'da', $revision, $rawXML);
 				timed('chaos');
