@@ -131,7 +131,8 @@ abstract class AChaosImporter {
 					} else {
 						$count = $end-$start+1;
 						printf("Harvesting a range of external objects (%u items starting from %u).\n", $count, $start);
-						$h->harvestRange($start, $count);
+						$ObjectGUIDs = $h->harvestRange($start, $count);
+						$h->syncronize($ObjectGUIDs);
 						printf("Done harvesting a range of external objects.\n");
 					}
 				} else {
@@ -143,7 +144,8 @@ abstract class AChaosImporter {
 				$h->harvestSingle($externalID);
 				printf("Done harvesting a signle object.\n");
 			} elseif(array_key_exists('all', $runtimeOptions) && $runtimeOptions['all'] == true) {
-				$h->harvestAll();
+				$ObjectGUIDs = $h->harvestAll();
+				$h->syncronize($ObjectGUIDs);
 			} else {
 				throw new InvalidArgumentException("None of --all, --single or --range was sat.");
 			}
@@ -177,7 +179,7 @@ abstract class AChaosImporter {
 	}
 	
 	protected static function printUsage($args) {
-		printf("Usage:\n\t%s [--all|--single={external-id}|--range={start-row}-{end-row}] [--publish={access-point-guid}|--unpublish={access-point-guid}] --skip-processing\n", $args[0]);
+		printf("Usage:\n\t%s [--all|--single={external-id}|--range={start-row}-{end-row}] [--publish={access-point-guid}|--unpublish={access-point-guid}] --skip-processing --sync\n", $args[0]);
 	}
 	
 	protected abstract function fetchRange($start, $count);
@@ -201,6 +203,7 @@ abstract class AChaosImporter {
 	}
 	
 	protected function harvestRange($start = 0, $count = null) {
+		$objectGUIDs = array();
 		$externals = $this->fetchRange($start, $count);
 
 		$failures = array();
@@ -221,7 +224,10 @@ abstract class AChaosImporter {
 						} else {
 							$externalObject = $external;
 						}
-						$this->processSingle($externalObject);
+						$objectGUID = $this->processSingle($externalObject);
+						if($objectGUID != null) {
+							$objectGUIDs[] = $objectGUID;
+						}
 						
 						break; // Break the retry loop.
 					} catch(Exception $e) {
@@ -259,7 +265,8 @@ abstract class AChaosImporter {
 				printf("\t%s: %s\n", $external, $failure["exception"]->getMessage());
 			}
 		}
-		//$this->processMovies($start, $count);
+		
+		return $objectGUIDs;
 	}
 	
 	protected function harvestSingle($externalId) {
@@ -309,8 +316,10 @@ abstract class AChaosImporter {
 				//var_dump($currentMetadata);
 				$revision = array_key_exists($schemaGUID, $revisions) ? $revisions[$schemaGUID] : null;
 				printf("\tSetting '%s' metadata on the Chaos object (overwriting revision %u): ", $schemaGUID, $revision);
+				$rawXML = $xml[$schemaGUID]->saveXML();
+				echo $rawXML;
 				timed();
-				$response = $this->_chaos->Metadata()->Set($object->GUID, $schemaGUID, 'da', $revision, $xml[$schemaGUID]->saveXML());
+				$response = $this->_chaos->Metadata()->Set($object->GUID, $schemaGUID, 'da', $revision, $rawXML);
 				timed('chaos');
 				if(!$response->WasSuccess()) {
 					printf("Failed.\n");
@@ -319,6 +328,8 @@ abstract class AChaosImporter {
 					printf("Succeeded.\n");
 				}
 			}
+			printf("Finished parsing CHAOS-object: %s\n", $object->GUID);
+			exit;
 		}
 		
 		if(array_key_exists('publish', $this->runtimeOptions) || array_key_exists('unpublish', $this->runtimeOptions)) {
@@ -344,11 +355,12 @@ abstract class AChaosImporter {
 		}
 		
 		printf("\tDone processing a single external object.\n");
+		return $object->GUID;
 	}
 	
 	protected function getOrCreateObject($externalObject) {
 		$query = $this->generateChaosQuery($externalObject);
-		$this->getChaosObjectTypeID();
+		$objectTypeID = $this->getChaosObjectTypeID();
 		
 		if(empty($query) || !is_string($query)) {
 			throw new Exception("The implemented class returned an empty query");
@@ -370,7 +382,7 @@ abstract class AChaosImporter {
 		if($response->MCM()->TotalCount() == 0) {
 			printf("\tFound a film in the DFI service which is not already represented by a Chaos object.\n");
 			timed();
-			$response = $this->_chaos->Object()->Create($this->_DKAObjectType->ID, $this->_ChaosFolderID);
+			$response = $this->_chaos->Object()->Create($objectTypeID, $this->_ChaosFolderID);
 			timed('chaos');
 			if($response == null) {
 				throw new RuntimeException("Couldn't create a DKA Object: response object was null.");
@@ -607,6 +619,33 @@ abstract class AChaosImporter {
 		}
 		if($dots >= $this->progressWidth) {
 			echo self::PROGRESS_END_CHAR;
+		}
+	}
+	
+	public function syncronize($objectGUIDs) {
+		if(array_key_exists('sync', $this->runtimeOptions)) {
+			$folderID = $this->_ChaosFolderID;
+			$objectTypeID = $this->getChaosObjectTypeID();
+			// Query for a Chaos Object that represents the DFI movie.
+			$totalObjectsQuery = "(FolderTree:$folderID AND ObjectTypeID:$objectTypeID)";
+			
+			// public function Get($query, $sort, $accessPointGUID, $pageIndex, $pageSize, $includeMetadata = false, $includeFiles = false, $includeObjectRelations = false, $includeAccessPoints = false)
+			$totalObjectsResponse = $this->_chaos->Object()->Get($totalObjectsQuery, null, null, 0, 1);
+			
+			printf("The harvester touched %u objects, the chaos service has %u in the folder.\n", count($objectGUIDs), $totalObjectsResponse->MCM()->totalCount());
+			
+			if($this->runtimeOptions['sync'] == 'delete') {
+				
+			} elseif(strpos($this->runtimeOptions['sync'], 'unpublish') === 0) {
+				$args = explode('=', $this->runtimeOptions['sync']);
+				if(count($args) == 2) {
+					$accessPointGUID = $args[1];
+				} else {
+					throw new RuntimeException("Strange arguments for the --sync=unpublish option.");
+				}
+			} else {
+				throw new RuntimeException("Strange arguments for the --sync=? option.");
+			}
 		}
 	}
 }
