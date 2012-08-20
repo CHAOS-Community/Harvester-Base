@@ -179,7 +179,7 @@ abstract class AChaosImporter {
 	}
 	
 	protected static function printUsage($args) {
-		printf("Usage:\n\t%s [--all|--single={external-id}|--range={start-row}-{end-row}] [--publish={access-point-guid}|--unpublish={access-point-guid}] --skip-processing --sync\n", $args[0]);
+		printf("Usage:\n\t%s [--all|--single={external-id}|--range={start-row}-{end-row}] [--publish={access-point-guid}|--unpublish={access-point-guid}] [--skip-processing] [--sync=dump={filename}]\n", $args[0]);
 	}
 	
 	protected abstract function fetchRange($start, $count);
@@ -622,26 +622,69 @@ abstract class AChaosImporter {
 		}
 	}
 	
-	public function syncronize($objectGUIDs) {
+	public function getAllIdentifiers($query) {
+		$result = array();
+		$pageIndex = 0;
+		$pageSize = 500;
+		$total = 0;
+		do {
+			timed();
+			$response = $this->_chaos->Object()->Get($query, null, null, $pageIndex, $pageSize);
+			timed('chaos');
+			$totalCount = $response->MCM()->totalCount();
+			foreach($response->MCM()->Results() as $object) {
+				$result[] = $object->GUID;
+			}
+			printf("Fetching GUIDs of existing objects (%u/%u).\n", $pageIndex+1, ceil($totalCount/$pageSize));
+			
+			$pageIndex++;
+		} while (count($result) < $totalCount);
+		return $result;
+	}
+	
+	public function syncronize($harvestedGUIDs) {
 		if(array_key_exists('sync', $this->runtimeOptions)) {
+			printf("Syncronizing objects (dealing with objects which have been removed from the external service).\n");
 			$folderID = $this->_ChaosFolderID;
 			$objectTypeID = $this->getChaosObjectTypeID();
 			// Query for a Chaos Object that represents the DFI movie.
 			$totalObjectsQuery = "(FolderTree:$folderID AND ObjectTypeID:$objectTypeID)";
 			
 			// public function Get($query, $sort, $accessPointGUID, $pageIndex, $pageSize, $includeMetadata = false, $includeFiles = false, $includeObjectRelations = false, $includeAccessPoints = false)
-			$totalObjectsResponse = $this->_chaos->Object()->Get($totalObjectsQuery, null, null, 0, 1);
+			$allGUIDs = $this->getAllIdentifiers($totalObjectsQuery);
 			
-			printf("The harvester touched %u objects, the chaos service has %u in the folder.\n", count($objectGUIDs), $totalObjectsResponse->MCM()->totalCount());
+			printf("The harvester touched %u objects, the chaos service has %u in the folder.\n", count($harvestedGUIDs), count($allGUIDs));
+			printf("Generating removed GUIDs: ");
+			$removedGUIDs = array_diff($allGUIDs, $harvestedGUIDs);
+			printf("Found %u.\n", count($removedGUIDs));
 			
 			if($this->runtimeOptions['sync'] == 'delete') {
-				
+				// TODO: Implement this.
+				throw new RuntimeException("Not implemented ...");
 			} elseif(strpos($this->runtimeOptions['sync'], 'unpublish') === 0) {
 				$args = explode('=', $this->runtimeOptions['sync']);
 				if(count($args) == 2) {
 					$accessPointGUID = $args[1];
+					// TODO: Implement this.
+					throw new RuntimeException("Not implemented ...");
 				} else {
 					throw new RuntimeException("Strange arguments for the --sync=unpublish option.");
+				}
+			} elseif(strpos($this->runtimeOptions['sync'], 'dump') === 0) {
+				$args = explode('=', $this->runtimeOptions['sync']);
+				if(count($args) == 2) {
+					$filename = $args[1];
+					$handle = fopen($filename, "w");
+					foreach($removedGUIDs as $GUID) {
+						$line = sprintf("%s\n", $GUID);
+						$fwrite = fwrite($handle, $line);
+						if($fwrite === false) {
+							throw new RuntimeException("Problems writing to the dump file.");
+						}
+					}
+					fclose($handle);
+				} else {
+					throw new RuntimeException("Strange arguments for the --sync=dump option.");
 				}
 			} else {
 				throw new RuntimeException("Strange arguments for the --sync=? option.");
