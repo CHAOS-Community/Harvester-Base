@@ -681,8 +681,23 @@ abstract class AChaosImporter {
 				$args = explode('=', $this->runtimeOptions['sync']);
 				if(count($args) == 2) {
 					$accessPointGUID = $args[1];
-					// TODO: Implement this.
-					throw new RuntimeException("Not implemented ...");
+					$index = 1;
+					foreach($removedGUIDs as $GUID) {
+						$index++;
+						printf("\t[%u/%u] Changing the publish settings for %s on %s to unpublished: ", $index, count($removedGUIDs), $GUID, $accessPointGUID);
+						
+						timed();
+						$response = $this->_chaos->Object()->SetPublishSettings($GUID, $accessPointGUID, null);
+						$this->ChaosKeepSessionAlive();
+						timed('chaos');
+						
+						if(!$response->WasSuccess() || !$response->MCM()->WasSuccess()) {
+							printf("Failed.\n");
+							//throw new RuntimeException("Couldn't set the publish settings on the Chaos object.");
+						} else {
+							printf("Succeeded.\n");
+						}
+					}
 				} else {
 					throw new RuntimeException("Strange arguments for the --sync=unpublish option.");
 				}
