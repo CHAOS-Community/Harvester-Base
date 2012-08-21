@@ -664,6 +664,8 @@ abstract class AChaosImporter {
 			$folderID = $this->_ChaosFolderID;
 			$objectTypeID = $this->getChaosObjectTypeID();
 			// Query for a Chaos Object that represents the DFI movie.
+			// TODO: Consider putting this in the query: (PubStart:[*+TO+NOW]+AND+PubEnd:[NOW+TO+*])
+			//$totalObjectsQuery = "(FolderTree:$folderID AND ObjectTypeID:$objectTypeID AND PubStart:[* TO NOW] AND PubEnd:[NOW TO *])";
 			$totalObjectsQuery = "(FolderTree:$folderID AND ObjectTypeID:$objectTypeID)";
 			
 			// public function Get($query, $sort, $accessPointGUID, $pageIndex, $pageSize, $includeMetadata = false, $includeFiles = false, $includeObjectRelations = false, $includeAccessPoints = false)
