@@ -290,10 +290,8 @@ abstract class AChaosImporter {
 		}
 		
 		$object = $this->getOrCreateObject($externalObject);
-
-		$skip = $shouldBeSkipped || array_key_exists('skip-processing', $this->runtimeOptions);
 		
-		if($skip) {
+		if(array_key_exists('skip-processing', $this->runtimeOptions)) {
 			printf("\tSkipping ...\n");
 		} else {
 			// For data generated while processing.
