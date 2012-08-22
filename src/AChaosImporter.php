@@ -131,8 +131,9 @@ abstract class AChaosImporter {
 					} else {
 						$count = $end-$start+1;
 						printf("Harvesting a range of external objects (%u items starting from %u).\n", $count, $start);
-						$ObjectGUIDs = $h->harvestRange($start, $count);
-						$h->syncronize($ObjectGUIDs);
+						$h->harvestRange($start, $count);
+						//$ObjectGUIDs = $h->harvestRange($start, $count);
+						//$h->syncronize($ObjectGUIDs);
 						printf("Done harvesting a range of external objects.\n");
 					}
 				} else {
@@ -199,7 +200,7 @@ abstract class AChaosImporter {
 	public abstract function getExternalClient();
 	
 	protected function harvestAll() {
-		$this->harvestRange();
+		return $this->harvestRange();
 	}
 	
 	protected function harvestRange($start = 0, $count = null) {
