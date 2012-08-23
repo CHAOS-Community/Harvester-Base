@@ -45,7 +45,10 @@ class XSLTMetadataGenerator extends AChaosMetadataGenerator {
 			}
 			throw new RuntimeException('Cannot load the XSLT stylesheet: '. implode(', ', $errors));
 		}
-		$this->_processor->importStylesheet($stylesheetXSL);
+		$success = $this->_processor->importStylesheet($stylesheetXSL);
+		if($success === false) {
+			throw new Exception("Couldn't import stylesheet.");
+		}
 	}
 	
 	/**
@@ -70,7 +73,7 @@ class XSLTMetadataGenerator extends AChaosMetadataGenerator {
 		}
 		$this->_processor->registerPHPFunctions();
 		foreach($extras as $key => $value) {
-			$this->_processor->setParameter('extras', $key, $value);
+			$success = $this->_processor->setParameter('', $key, $value);
 		}
 		$result = $this->_processor->transformToDoc($dom);
 		$result->formatOutput = true;
