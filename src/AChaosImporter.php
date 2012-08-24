@@ -293,6 +293,7 @@ abstract class AChaosImporter {
 			return;
 		}
 		
+		// Use the $externalObject to look up (or create) the internal Chaos object to use.
 		$object = $this->getOrCreateObject($externalObject);
 		
 		if(array_key_exists('skip-processing', $this->runtimeOptions)) {
@@ -306,9 +307,24 @@ abstract class AChaosImporter {
 			
 			$files = $this->extractFiles($object, $externalObject, $extras);
 			$extras['extractedFiles'] = $files;
+			$excessFiles = array();
 			
-			// TODO: Use the $externalObject to look up (or create) the internal Chaos object to use.
-			// TODO: Run through all registrated $this->_xmlGenerators and $this->_fileExtractors
+			// Delete any unused files.
+			foreach($object->Files as $fileOnObject) {
+				foreach($files as $extractor => $extractedFiles) {
+					foreach($extractedFiles as $extractedFile) {
+						if($fileOnObject->ID === $extractedFile->ID) {
+							continue 3;
+						}
+					}
+				}
+				$excessFiles[] = $fileOnObject;
+			}
+			printf("\tFound %u files on the object which was not extracted, these will now be deleted: ", count($excessFiles));
+			printf(" If only it was implemented in the CHAOS service.\n");
+			//foreach($excessFiles as $fileToDelete) {
+			//	printf("\t\tDeleting file #%u: ", $fileToDelete->ID);
+			//}
 			
 			$xml = $this->generateMetadata($externalObject, $extras);
 			
@@ -421,6 +437,7 @@ abstract class AChaosImporter {
 			$files = $extractor->process($this, $object, $externalObject, $extras);
 			$result[get_class($extractor)] = $files;
 		}
+		// Detirmi
 		return $result;
 	}
 	
