@@ -219,12 +219,14 @@ abstract class AChaosImporter {
 				for($attempt = 1; $attempt <= 3; $attempt++) {
 					try {
 						// TODO: Check that this actually works.
+						timed();
 						if(is_string($external)) {
 							// We got a reference, we need to fetch the object.
 							$externalObject = $this->fetchSingle($external);
 						} else {
 							$externalObject = $external;
 						}
+						timed('external');
 						$objectGUID = $this->processSingle($externalObject);
 						if($objectGUID != null) {
 							$objectGUIDs[] = $objectGUID;
@@ -272,7 +274,9 @@ abstract class AChaosImporter {
 	}
 	
 	protected function harvestSingle($externalId) {
+		timed();
 		$externalObject = $this->fetchSingle($externalId);
+		timed('external');
 		$this->processSingle($externalObject);
 	}
 	
@@ -318,16 +322,22 @@ abstract class AChaosImporter {
 				printf("\tSetting '%s' metadata on the Chaos object (overwriting revision %u): ", $schemaGUID, $revision);
 				$rawXML = $xml[$schemaGUID]->saveXML();
 				//echo $rawXML;
+				//exit;
 				timed();
 				$response = $this->_chaos->Metadata()->Set($object->GUID, $schemaGUID, 'da', $revision, $rawXML);
 				timed('chaos');
 				if(!$response->WasSuccess()) {
 					printf("Failed.\n");
-					throw new RuntimeException("Couldn't set the metadata on the Chaos object.");
+					throw new RuntimeException("Couldn't set the metadata on the Chaos object: ".$response->Error()->Message());
+				} elseif(!$response->MCM()->WasSuccess()) {
+					printf("Failed.\n");
+					throw new RuntimeException("Couldn't set the metadata on the Chaos object: (MCM error) ".$response->MCM()->Error()->Message());
 				} else {
 					printf("Succeeded.\n");
 				}
 			}
+			
+			//printf("Done processing: %s\n", $object->GUID);
 		}
 		
 		if(array_key_exists('publish', $this->runtimeOptions) || array_key_exists('unpublish', $this->runtimeOptions)) {
@@ -369,29 +379,30 @@ abstract class AChaosImporter {
 		timed('chaos');
 		
 		if(!$response->WasSuccess()) {
-			throw new RuntimeException("Couldn't complete the request for a movie: (Request error) ". $response->Error()->Message());
+			throw new RuntimeException("Couldn't complete the request for an object: (Request error) ". $response->Error()->Message());
 		} else if(!$response->MCM()->WasSuccess()) {
-			throw new RuntimeException("Couldn't complete the request for a movie: (MCM error) ". $response->MCM()->Error()->Message());
+			throw new RuntimeException("Couldn't complete the request for an object: (MCM error) ". $response->MCM()->Error()->Message());
 		}
 		
 		$results = $response->MCM()->Results();
 		
 		// If it's not there, create it.
 		if($response->MCM()->TotalCount() == 0) {
-			printf("\tFound a film in the DFI service which is not already represented by a Chaos object.\n");
+			printf("\tCreating a new Chaos object with GUID = ");
 			timed();
 			$response = $this->_chaos->Object()->Create($objectTypeID, $this->_ChaosFolderID);
 			timed('chaos');
 			if($response == null) {
-				throw new RuntimeException("Couldn't create a DKA Object: response object was null.");
+				throw new RuntimeException("Couldn't create an Object: response object was null.");
 			} else if(!$response->WasSuccess()) {
-				throw new RuntimeException("Couldn't create a DKA Object: ". $response->Error()->Message());
+				throw new RuntimeException("Couldn't create an Object: ". $response->Error()->Message());
 			} else if(!$response->MCM()->WasSuccess()) {
-				throw new RuntimeException("Couldn't create a DKA Object: ". $response->MCM()->Error()->Message());
+				throw new RuntimeException("Couldn't create an Object: ". $response->MCM()->Error()->Message());
 			} else if ($response->MCM()->TotalCount() != 1) {
-				throw new RuntimeException("Couldn't create a DKA Object .. No errors but no object created.");
+				throw new RuntimeException("Couldn't create an Object .. No errors but no object created.");
 			}
 			$results = $response->MCM()->Results();
+			printf("%s\n", $results[0]->GUID);
 		} else {
 			printf("\tReusing Chaos object with GUID = %s.\n", $results[0]->GUID);
 		}
@@ -399,11 +410,10 @@ abstract class AChaosImporter {
 	}
 	
 	/**
-	 * This is the "important" method which generates the metadata XML documents from a MovieItem from the DFI service.
-	 * @param \dfi\model\MovieItem $movieItem A particular MovieItem from the DFI service, representing a particular movie.
-	 * @param bool $validateSchema Should the document be validated against the XML schema?
-	 * @throws Exception if $validateSchema is true and the validation fails.
-	 * @return DOMDocument Representing the DFI movie in the DKA Program specific schema.
+	 * Iterates over all registered file extractors and extracts (get or creates) files in the CHAOS service.
+	 * @param stdClass $object The CHAOS object, on which files will be attached.
+	 * @param unknown_type $externalObject The external object, of which the type should be know to the file extractors.
+	 * @param array[string]=unknown_type $extras An array of extra values which is generated during the processing of the object.
 	 */
 	protected function extractFiles($object, $externalObject, &$extras) {
 		$result = array();
@@ -415,17 +425,14 @@ abstract class AChaosImporter {
 	}
 	
 	/**
-	 * This is the "important" method which generates the metadata XML documents from a MovieItem from the DFI service.
-	 * @param \dfi\model\MovieItem $movieItem A particular MovieItem from the DFI service, representing a particular movie.
-	 * @param bool $validateSchema Should the document be validated against the XML schema?
-	 * @throws Exception if $validateSchema is true and the validation fails.
-	 * @return DOMDocument Representing the DFI movie in the DKA Program specific schema.
+	 * This is the "important" method which generates the metadata XML documents using all registered generators.
+	 * @param unknown_type $externalObject The external object, of which the type should be know to the xml generators.
+	 * @param array[string]=unknown_type $extras An array of extra values which is generated during the processing of the object.
 	 */
-	/** @deprecated Use a method on the abstract AChaosImporter instead. */
 	protected function generateMetadata($externalObject, &$extras) {
 		$result = array();
 		foreach($this->_metadataGenerators as $generator) {
-			$result[$generator::SCHEMA_GUID] = $generator->generateXML($externalObject, $extras);
+			$result[$generator->getSchemaGUID()] = $generator->generateXML($externalObject, $extras);
 		}
 		return $result;
 	}
@@ -493,32 +500,6 @@ abstract class AChaosImporter {
 		}
 	
 		printf("Succeeded.\n");
-	}
-	
-	// protected abstract function CHAOS_fetchObjectType();
-	
-	protected function ChaosFetchObjectTypeFromName($name) {
-		if(empty($name)) {
-			throw new InvalidArgumentException("The name of the object type has to be sat.");
-		}
-		$response = $this->_chaos->ObjectType()->Get();
-		if(!$response->WasSuccess()) {
-			throw new RuntimeException("Couldn't lookup the '$name' object type.");
-		}
-		
-		$result = null;
-		foreach($response->MCM()->Results() as $objectType) {
-			if($objectType->Name == $name) {
-				$result = $objectType;
-				break;
-			}
-		}
-		
-		if($result == null) {
-			throw new RuntimeException("Couldn't find the '$name' object type.");
-		} else {
-			return $result;
-		}
 	}
 	
 	const SESSION_UPDATE_INTERVAL = 900; // Every 15 minutes.

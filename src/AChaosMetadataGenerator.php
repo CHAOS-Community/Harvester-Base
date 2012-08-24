@@ -43,4 +43,6 @@ abstract class AChaosMetadataGenerator {
 	 */
 	abstract public function fetchSchema($chaosClient);
 	
+	abstract public function getSchemaGUID();
+	
 }

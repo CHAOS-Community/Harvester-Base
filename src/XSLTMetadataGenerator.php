@@ -25,8 +25,9 @@ class XSLTMetadataGenerator extends AChaosMetadataGenerator {
 	
 	const VALIDATE = false;
 		
-	public function __construct($stylesheet) {
+	public function __construct($stylesheet, $schemaGUID) {
 		$this->_stylesheet = $stylesheet;
+		$this->_schemaGUID = $schemaGUID;
 		// Check that this is infact a valid XSLT stylesheet.
 		/*if(!class_exists('\XSLTProcessor', true)) {
 			throw new RuntimeException("The XSLTProcessor class does not exsist, do you have the PHP XSL-lib installed? See: http://dk.php.net/manual/en/xsl.setup.php");
@@ -73,7 +74,9 @@ class XSLTMetadataGenerator extends AChaosMetadataGenerator {
 		}
 		$this->_processor->registerPHPFunctions();
 		foreach($extras as $key => $value) {
-			$success = $this->_processor->setParameter('', $key, $value);
+			if(is_string($value) || is_numeric($value)) {
+				$success = $this->_processor->setParameter('', $key, $value);
+			}
 		}
 		$result = $this->_processor->transformToDoc($dom);
 		$result->formatOutput = true;
@@ -82,5 +85,9 @@ class XSLTMetadataGenerator extends AChaosMetadataGenerator {
 			$this->validate($dom);
 		}
 		return $result;
+	}
+	
+	public function getSchemaGUID() {
+		return $this->_schemaGUID;
 	}
 }
