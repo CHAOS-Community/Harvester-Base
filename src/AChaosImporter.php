@@ -414,7 +414,7 @@ abstract class AChaosImporter {
 			} else if(!$response->WasSuccess()) {
 				throw new RuntimeException("Couldn't create an Object: ". $response->Error()->Message());
 			} else if(!$response->MCM()->WasSuccess()) {
-				throw new RuntimeException("Couldn't create an Object: ". $response->MCM()->Error()->Message());
+				throw new RuntimeException("Couldn't create an Object: (MCM Error): ". $response->MCM()->Error()->Message());
 			} else if ($response->MCM()->TotalCount() != 1) {
 				throw new RuntimeException("Couldn't create an Object .. No errors but no object created.");
 			}
