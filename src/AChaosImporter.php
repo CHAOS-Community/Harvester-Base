@@ -195,7 +195,7 @@ abstract class AChaosImporter {
 	
 	protected abstract function generateChaosQuery($externalObject);
 	
-	protected abstract function getChaosObjectTypeID();
+	protected abstract function getChaosObjectTypeID($externalObject);
 	
 	public abstract function getExternalClient();
 	
@@ -364,6 +364,8 @@ abstract class AChaosImporter {
 			$start = null;
 			if($publish === true) {
 				$start = new DateTime();
+				$aDayInterval = new DateInterval("P1D");
+				$start->sub($aDayInterval);
 				printf("\tChanging the publish settings for %s to startDate = %s: ", $accessPointGUID, $start->format("Y-m-d H:i:s"));
 			} elseif($publish === false) {
 				printf("\tChanging the publish settings for %s to unpublished: ", $accessPointGUID);
@@ -385,7 +387,7 @@ abstract class AChaosImporter {
 	
 	protected function getOrCreateObject($externalObject) {
 		$query = $this->generateChaosQuery($externalObject);
-		$objectTypeID = $this->getChaosObjectTypeID();
+		$objectTypeID = $this->getChaosObjectTypeID($externalObject);
 		
 		if(empty($query) || !is_string($query)) {
 			throw new Exception("The implemented class returned an empty query");

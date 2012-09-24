@@ -33,7 +33,7 @@ class XSLTMetadataGenerator extends AChaosMetadataGenerator {
 			throw new RuntimeException("The XSLTProcessor class does not exsist, do you have the PHP XSL-lib installed? See: http://dk.php.net/manual/en/xsl.setup.php");
 		}*/
 		
-		$this->_processor = new XSLTProcessor();
+		$this->_processor = new \XSLTProcessor();
 		if(!file_exists($this->_stylesheet)) {
 			throw new RuntimeException('Cannot locate the XSLT stylesheet: '. $this->_stylesheet);
 		}
