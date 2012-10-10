@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.example.org/ChaosHarvesterConfiguration" xmlns:chc="http://www.example.org/ChaosHarvesterConfiguration" elementFormDefault="qualified">
+
+    <annotation>
+    	<documentation>This schema describes the configuration of a chaos harvester configuration.</documentation></annotation>
+
+    <element name="ChaosHarvesterConfiguration"
+    	type="chc:ChaosHarvesterConfiguration">
+    </element>
+    
+    <complexType name="ChaosHarvesterConfiguration">
+    	<sequence>
+    		<element name="Organisation"
+    			type="chc:StringOrEnvironmentVariable" maxOccurs="1"
+    			minOccurs="1">
+    		</element>
+    		<element name="Project"
+    			type="chc:StringOrEnvironmentVariable" minOccurs="1"
+    			maxOccurs="1">
+    		</element>
+    		<element name="Description"
+    			type="chc:StringOrEnvironmentVariable" maxOccurs="1"
+    			minOccurs="1">
+    		</element>
+    		<element name="Modes" maxOccurs="1" minOccurs="1">
+    			<complexType>
+    				<sequence>
+    					<element name="Mode" type="chc:ModeType"
+    						maxOccurs="unbounded" minOccurs="0">
+    					</element>
+    				</sequence>
+    			</complexType>
+    		</element>
+    		<element name="Processors" maxOccurs="1" minOccurs="1">
+    			<annotation>
+    				<documentation>
+    					Describes the processors that will be invoked on
+    					any single external object.
+    				</documentation>
+    			</annotation>
+    			<complexType>
+    				<sequence>
+    					<element name="Processor"
+    						type="chc:ProcessorType" maxOccurs="unbounded"
+    						minOccurs="0">
+    					</element>
+    				</sequence>
+    			</complexType>
+    		</element>
+    		<element name="Filters" type="chc:FiltersType" maxOccurs="1"
+    			minOccurs="1">
+    			<annotation>
+    				<documentation>
+    					Describes the filters that will be invoked on
+    					any single external object. A filter determines
+    					whether or not the external object is included
+    					or skipped in the harvest.
+    				</documentation>
+    			</annotation>
+    		</element>
+
+    		<element name="ChaosConfiguration">
+    			<complexType>
+    				<sequence>
+    					<element name="URL"
+    						type="chc:StringOrEnvironmentVariable">
+    					</element>
+    					<element name="Email"
+    						type="chc:StringOrEnvironmentVariable">
+    					</element>
+    					<element name="Password"
+    						type="chc:StringOrEnvironmentVariable">
+    					</element>
+    					<element name="ClientGUID"
+    						type="chc:StringOrEnvironmentVariable" maxOccurs="1"
+    						minOccurs="0">
+    					</element>
+    				</sequence>
+    			</complexType>
+    		</element>
+    		<element name="IncludePaths">
+    			<complexType>
+    				<sequence>
+    					<element name="path" type="chc:StringOrEnvironmentVariable"></element>
+    				</sequence>
+    			</complexType>
+    		</element>
+    	</sequence>
+    </complexType>
+
+
+    <complexType name="StringOrEnvironmentVariable">
+        <annotation>
+        	<documentation>This type gives the posibility of having a string value set by an environment variable.</documentation>
+        </annotation>
+        <simpleContent>
+    		<extension base="string">
+    			<attribute name="fromEnvironment" type="string" use="optional"></attribute>
+    		</extension>
+    	</simpleContent>
+    </complexType>
+
+
+
+    <complexType name="ProcessorType">
+    	<complexContent>
+    		<extension base="chc:Class">
+    			<attribute name="name" type="string"></attribute>
+
+
+    			<attribute name="type">
+    				<simpleType>
+    					<restriction base="string">
+    						<enumeration value="ObjectProcessor"></enumeration>
+    						<enumeration value="MetadataProcessor"></enumeration>
+    						<enumeration value="FileProcessor"></enumeration>
+    					</restriction>
+    				</simpleType>
+    			</attribute>
+    		</extension>
+    	</complexContent>
+    </complexType>
+
+    <complexType name="Class">
+    	<attribute name="className" type="string" use="required"></attribute>
+    	<attribute name="namespace" type="string" use="optional"></attribute>
+    </complexType>
+    
+
+    <complexType name="ModeType">
+    	<complexContent>
+    		<extension base="chc:Class">
+    			<attribute name="type">
+				    <simpleType>
+				    	<restriction base="string">
+				    		<enumeration value="SingleByReference">
+				    			<annotation>
+				    				<documentation>
+				    					This mode-type describes a mode that can fetch a
+				    					single external object by the external reference
+				    					(id/url etc.)
+				    				</documentation>
+				    			</annotation>
+				    		</enumeration>
+				    		<enumeration value="SingleByPosition">
+				    			<annotation>
+				    				<documentation>
+				    					This mode-type describes a mode that can fetch a
+				    					single external object by the position on an
+				    					external list of all advailable external
+				    					objects.
+				    				</documentation>
+				    			</annotation>
+				    		</enumeration>
+				    		<enumeration value="SetByPositionInterval">
+				    			<annotation>
+				    				<documentation>
+				    					This mode-type describes a mode that can fetch a
+				    					range of external objects by the interval of
+				    					position values on an external list of all
+				    					advailable external objects.
+				    				</documentation>
+				    			</annotation>
+				    		</enumeration>
+				    		<enumeration value="SetByReferenceInterval">
+				    			<annotation>
+				    				<documentation>
+				    					This mode-type describes a mode that can fetch a
+				    					range of external objects by the interval of
+				    					references (ids/urls etc) values.
+				    				</documentation>
+				    			</annotation>
+				    		</enumeration>
+				    		<enumeration value="SetByReference">
+				    			<annotation>
+				    				<documentation>
+				    					This mode-type describes a mode that can fetch a
+				    					set of external object from a reference to this
+				    					external set (id/url etc).
+				    				</documentation>
+				    			</annotation>
+				    		</enumeration>
+				    		<enumeration value="All">
+				    			<annotation>
+				    				<documentation>This mode-type describes a mode that can fetch all external object exposed by the service.</documentation>
+				    			</annotation></enumeration>
+				    	</restriction>
+				    </simpleType>
+    			</attribute>
+    		</extension>
+    	</complexContent>
+    </complexType>
+
+    <complexType name="FiltersType">
+    	<sequence>
+    		<choice maxOccurs="1" minOccurs="1">
+    			<element name="Filter" type="chc:Filter"></element>
+    			<element name="EmbeddedFilter"
+    				type="chc:EmbeddedFilterType">
+    			</element>
+    		</choice>
+    	</sequence>
+    </complexType>
+
+    <complexType name="Filter">
+    	<complexContent>
+    		<extension base="chc:Method"></extension>
+    	</complexContent>
+    </complexType>
+
+    <complexType name="EmbeddedFilterType">
+    	<simpleContent>
+    		<extension base="string">
+    			<attribute name="language" use="required">
+    				<simpleType>
+    					<restriction base="string">
+    						<enumeration value="PHP"></enumeration>
+    					</restriction>
+    				</simpleType>
+    			</attribute>
+    		</extension>
+    	</simpleContent>
+    </complexType>
+
+    <complexType name="ObjectProcessorType">
+    	<complexContent>
+    		<extension base="chc:ProcessorType">
+    			<sequence>
+    				<element name="FolderId" type="chc:StringOrEnvironmentVariable"></element>
+    			</sequence>
+    		</extension>
+    	</complexContent>
+    </complexType>
+
+    <complexType name="FileProcessorType">
+    	<complexContent>
+    		<extension base="chc:ProcessorType">
+    			<sequence>
+    				<element name="Format">
+    					<complexType>
+    						<sequence>
+                                <element name="Type" type="chc:StringOrEnvironmentVariable">
+    							</element>
+                                <element name="Id"
+    								type="chc:StringOrEnvironmentVariable">
+    							</element>
+    						</sequence>
+    					</complexType>
+    				</element>
+    			</sequence>
+    		</extension>
+    	</complexContent>
+    </complexType>
+
+    <complexType name="MetadataProcessorType"></complexType>
+
+    <complexType name="Method">
+    	<sequence>
+    		<element name="name"
+    			type="chc:StringOrEnvironmentVariable">
+    		</element>
+    		<element name="class" type="chc:Class"></element>
+    	</sequence>
+    </complexType>
+</schema>
