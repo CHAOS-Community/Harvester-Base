@@ -10,7 +10,7 @@ abstract class Filter {
 	
 	/**
 	 * Does this external object pass the filter?
-	 * @return boolean True if it passes, false if not indicating that it should be skipped.
+	 * @return boolean|string True if it passes, false if indicating that it should be skipped, string if a message is attached.
 	 */
 	public abstract function passes($externalObject);
 }

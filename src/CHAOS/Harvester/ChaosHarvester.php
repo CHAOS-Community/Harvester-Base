@@ -114,38 +114,50 @@ class ChaosHarvester {
 			$namespace = strval($attributes->namespace);
 			$className = strval($attributes->className);
 			$this->loadProcessor($name, $type, $namespace, $className);
-		}
-		
-		// Parsing filters
-		$this->_filters = array();
-		foreach($this->_configuration->xpath("chc:Filters/chc:Filter") as $filter) {
-			/* @var $filter SimpleXMLElement */
-			$attributes = $filter->attributes();
 			
-			$name = strval($attributes->name);
-			//var_dump($methodName);
-			$namespace = strval($attributes->namespace);
-			$className = strval($attributes->className);
-			$this->loadFilter($name, $namespace, $className);
-		}
-		
-		// Parsing the embedded filters.
-		foreach($this->_configuration->xpath("chc:Filters/chc:EmbeddedFilter") as $filter) {
-			/* @var $filter SimpleXMLElement */
-			$attributes = $filter->attributes();
-			
-			$name = strval($attributes->name);
-			$language = strval($attributes->language);
-			if($language != 'PHP') {
-				trigger_error("Cannot use an embedded filter which is not written in PHP.", E_USER_WARNING);
+			// Parsing filters
+			$filters = array();
+			foreach($processor->xpath("chc:Filters/chc:Filter") as $filter) {
+				/* @var $filter SimpleXMLElement */
+				$filterAttributes = $filter->attributes();
+					
+				$filterName = strval($filterAttributes->name);
+				//var_dump($methodName);
+				$filterNamespace = strval($filterAttributes->namespace);
+				$filterClassName = strval($filterAttributes->className);
+				
+				if(key_exists($filterName, $filters)) {
+					throw new RuntimeException("A filter by the name of '$filterName' is already loaded.");
+				} else {
+					$filters[$filterName] = $this->loadFilter($filterName, $filterNamespace, $filterClassName);
+				}
 			}
-			$this->loadFilter($name, '\CHAOS\Harvester', 'EmbeddedFilter');
 			
-			$filterObject = $this->_filters[$name];
-			/* @var $filterObject EmbeddedFilter */
-			if($filterObject instanceof EmbeddedFilter) {
-				$filterObject->setCode(strval($filter));
+			// Parsing the embedded filters.
+			foreach($processor->xpath("chc:Filters/chc:EmbeddedFilter") as $filter) {
+				/* @var $filter SimpleXMLElement */
+				$filterAttributes = $filter->attributes();
+					
+				$filterName = strval($filterAttributes->name);
+				$filterLanguage = strval($filterAttributes->language);
+				if($filterLanguage != 'PHP') {
+					trigger_error("Cannot use an embedded filter which is not written in PHP.", E_USER_WARNING);
+				}
+				
+				if(key_exists($filterName, $filters)) {
+					throw new RuntimeException("A filter by the name of '$filterName' is already loaded.");
+				} else {
+					$filterObject = $this->loadFilter($filterName, '\CHAOS\Harvester', 'EmbeddedFilter');
+					
+					$filters[$filterName] = $filterObject;
+					/* @var $filterObject EmbeddedFilter */
+					if($filterObject instanceof EmbeddedFilter) {
+						$filterObject->setCode(strval($filter));
+					}
+				}
 			}
+			
+			$this->_processors[$name]->setFilters($filters);
 		}
 		
 		// Parsing external clients
@@ -348,12 +360,7 @@ class ChaosHarvester {
 	}
 	
 	protected function loadFilter($name, $namespace, $className) {
-		$filter = $this->loadClass($name, $namespace, $className, array('CHAOS\Harvester\Filter'));
-		if(key_exists($name, $this->_filters)) {
-			throw new RuntimeException("A filter by the name of '$name' is already loaded.");
-		} else {
-			$this->_filters[$name] = $filter;
-		}
+		return $this->loadClass($name, $namespace, $className, array('CHAOS\Harvester\Filter'));
 	}
 	
 	protected function loadExternalClient($name, $namespace, $className) {
@@ -393,40 +400,41 @@ class ChaosHarvester {
 		
 		if(key_exists($mode, $this->_modes)) {
 			self::info("Starting harvester in '%s' mode.", $mode);
-			// This mode is supported.
-			$this->_modes[$mode]->execute();
+			if($this->_modes[$mode] instanceof AllMode) {
+				$this->_modes[$mode]->execute();
+			} else if($this->_modes[$mode] instanceof SingleByReferenceMode) {
+				if(!key_exists('reference', $this->_options)) {
+					trigger_error('You have to specify a --reference={reference} in the '.$mode.' mode.', E_USER_ERROR);
+				}
+				$reference = $this->_options['reference'];
+				$this->_modes[$mode]->execute($reference);
+			}
 		} else {
 			throw new RuntimeException("Mode '$mode' is not supported, please choose from: ".implode(', ', array_keys($this->_modes)));
 		}
 	}
 	
-	public function process($externalObject) {
-		$filterResult = $this->passesFilters($externalObject);
-		if($filterResult === true) {
-			$this->debug("Starting to process external object with %d different processors.", count($this->_processors));
-			$p = 1;
-			foreach($this->_processors as $name => $processor) {
-				$this->debug("Processing the external object with the '%s' processor %d/%d", $name, $p, count($this->_processors));
-				/* @var $processor Processor */
-				$processor->process($externalObject);
-				$p++;
-			}
-		}
-	}
-	
-	public function passesFilters($externalObject) {
-		$finalResult = array();
-		foreach($this->_filters as $name => $f) {
-			/* @var $f Filter */
-			$result = $f->passes($externalObject);
-			if($result !== true) {
-				$finalResult[] = array('name' => $name, 'filter' => $f, 'problem' => $result);
-			}
-		}
-		if(count($finalResult) == 0) {
-			return true;
+	public function process($processorName, $externalObject) {
+		if($processorName == null || strlen($processorName) == 0) {
+			throw new RuntimeException("A processor name has to be choosen.");
+		} elseif(!key_exists($processorName, $this->_processors)) {
+			throw new RuntimeException("No processor named $processor loaded.");
 		} else {
-			return $finalResult;
+			$this->debug("Processing the external object with the '%s' processor.", $processorName);
+			$processor = $this->_processors[$processorName];
+			/* @var $processor Processor */
+			$filterResult = $processor->passesFilters($externalObject);
+			if($filterResult === true) {
+				$processor->process($externalObject);
+			} elseif(is_array($filterResult)) {
+				foreach($filterResult as $rejection) {
+					if($rejection['reason'] === false || strlen($rejection['reason']) == 0) {
+						$this->info("Skipped because the external object didn't pass the %s filter without a reason.", $rejection['name']);
+					} else {
+						$this->info("Skipped because the external object didn't pass the %s filter, because: %s", $rejection['name'], $rejection['reason']);
+					}
+				}
+			}
 		}
 	}
 	

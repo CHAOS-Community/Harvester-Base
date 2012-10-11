@@ -8,9 +8,4 @@ abstract class Mode implements Loadable {
 	 */
 	protected $_harvester;
 	
-	/**
-	 * Execute the harvester in the specified mode.
-	 */
-	public abstract function execute();
-	
 }
