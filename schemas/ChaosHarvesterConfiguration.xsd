@@ -39,11 +39,18 @@
     				</documentation>
     			</annotation>
     			<complexType>
-    				<sequence>
-    					<element name="Processor"
-    						type="chc:ProcessorType" maxOccurs="unbounded"
-    						minOccurs="0">
-    					</element>
+    				<sequence maxOccurs="unbounded" minOccurs="0">
+    					<choice>
+    						<element name="ObjectProcessor"
+    							type="chc:ObjectProcessorType">
+    						</element>
+    						<element name="MetadataProcessor"
+    							type="chc:MetadataProcessorType">
+    						</element>
+    						<element name="FileProcessor"
+    							type="chc:FileProcessorType">
+    						</element>
+    					</choice>
     				</sequence>
     			</complexType>
     		</element>
@@ -59,17 +66,17 @@
     			</annotation>
     		</element>
 
-    		<element name="ChaosConfiguration">
+    		<element name="ChaosConfiguration" maxOccurs="1" minOccurs="1">
     			<complexType>
     				<sequence>
     					<element name="URL"
-    						type="chc:StringOrEnvironmentVariable">
+    						type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="1">
     					</element>
     					<element name="Email"
-    						type="chc:StringOrEnvironmentVariable">
+    						type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="1">
     					</element>
     					<element name="Password"
-    						type="chc:StringOrEnvironmentVariable">
+    						type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="1">
     					</element>
     					<element name="ClientGUID"
     						type="chc:StringOrEnvironmentVariable" maxOccurs="1"
@@ -78,10 +85,26 @@
     				</sequence>
     			</complexType>
     		</element>
-    		<element name="IncludePaths">
+            <element name="ExternalClient" maxOccurs="unbounded" minOccurs="0">
+            	<complexType>
+            		<complexContent>
+            			<extension base="chc:Class">
+            				<sequence>
+            					<element name="Parameter"
+            						type="chc:ParameterType" maxOccurs="unbounded" minOccurs="0">
+            					</element>
+            				</sequence>
+            				<attribute name="name" type="string"></attribute>
+            			</extension>
+            		</complexContent>
+            	</complexType></element>
+            <element name="IncludePaths">
     			<complexType>
     				<sequence>
-    					<element name="path" type="chc:StringOrEnvironmentVariable"></element>
+    					<element name="path"
+    						type="chc:StringOrEnvironmentVariable" maxOccurs="unbounded"
+    						minOccurs="0">
+    					</element>
     				</sequence>
     			</complexType>
     		</element>
@@ -131,69 +154,84 @@
     	<complexContent>
     		<extension base="chc:Class">
     			<attribute name="type">
-				    <simpleType>
-				    	<restriction base="string">
-				    		<enumeration value="SingleByReference">
-				    			<annotation>
-				    				<documentation>
-				    					This mode-type describes a mode that can fetch a
-				    					single external object by the external reference
-				    					(id/url etc.)
-				    				</documentation>
-				    			</annotation>
-				    		</enumeration>
-				    		<enumeration value="SingleByPosition">
-				    			<annotation>
-				    				<documentation>
-				    					This mode-type describes a mode that can fetch a
-				    					single external object by the position on an
-				    					external list of all advailable external
-				    					objects.
-				    				</documentation>
-				    			</annotation>
-				    		</enumeration>
-				    		<enumeration value="SetByPositionInterval">
-				    			<annotation>
-				    				<documentation>
-				    					This mode-type describes a mode that can fetch a
-				    					range of external objects by the interval of
-				    					position values on an external list of all
-				    					advailable external objects.
-				    				</documentation>
-				    			</annotation>
-				    		</enumeration>
-				    		<enumeration value="SetByReferenceInterval">
-				    			<annotation>
-				    				<documentation>
-				    					This mode-type describes a mode that can fetch a
-				    					range of external objects by the interval of
-				    					references (ids/urls etc) values.
-				    				</documentation>
-				    			</annotation>
-				    		</enumeration>
-				    		<enumeration value="SetByReference">
-				    			<annotation>
-				    				<documentation>
-				    					This mode-type describes a mode that can fetch a
-				    					set of external object from a reference to this
-				    					external set (id/url etc).
-				    				</documentation>
-				    			</annotation>
-				    		</enumeration>
-				    		<enumeration value="All">
-				    			<annotation>
-				    				<documentation>This mode-type describes a mode that can fetch all external object exposed by the service.</documentation>
-				    			</annotation></enumeration>
-				    	</restriction>
-				    </simpleType>
+    				<simpleType>
+    					<restriction base="string">
+    						<enumeration value="SingleByReference">
+    							<annotation>
+    								<documentation>
+    									This mode-type describes a mode
+    									that can fetch a single external
+    									object by the external reference
+    									(id/url etc.)
+    								</documentation>
+    							</annotation>
+    						</enumeration>
+    						<enumeration value="SingleByPosition">
+    							<annotation>
+    								<documentation>
+    									This mode-type describes a mode
+    									that can fetch a single external
+    									object by the position on an
+    									external list of all advailable
+    									external objects.
+    								</documentation>
+    							</annotation>
+    						</enumeration>
+    						<enumeration
+    							value="SetByPositionInterval">
+    							<annotation>
+    								<documentation>
+    									This mode-type describes a mode
+    									that can fetch a range of
+    									external objects by the interval
+    									of position values on an
+    									external list of all advailable
+    									external objects.
+    								</documentation>
+    							</annotation>
+    						</enumeration>
+    						<enumeration
+    							value="SetByReferenceInterval">
+    							<annotation>
+    								<documentation>
+    									This mode-type describes a mode
+    									that can fetch a range of
+    									external objects by the interval
+    									of references (ids/urls etc)
+    									values.
+    								</documentation>
+    							</annotation>
+    						</enumeration>
+    						<enumeration value="SetByReference">
+    							<annotation>
+    								<documentation>
+    									This mode-type describes a mode
+    									that can fetch a set of external
+    									object from a reference to this
+    									external set (id/url etc).
+    								</documentation>
+    							</annotation>
+    						</enumeration>
+    						<enumeration value="All">
+    							<annotation>
+    								<documentation>
+    									This mode-type describes a mode
+    									that can fetch all external
+    									object exposed by the service.
+    								</documentation>
+    							</annotation>
+    						</enumeration>
+    					</restriction>
+    				</simpleType>
     			</attribute>
+    			<attribute name="name" type="string"></attribute>
     		</extension>
     	</complexContent>
     </complexType>
 
     <complexType name="FiltersType">
-    	<sequence>
-    		<choice maxOccurs="1" minOccurs="1">
+    	<sequence maxOccurs="unbounded" minOccurs="0">
+    		<choice>
     			<element name="Filter" type="chc:Filter"></element>
     			<element name="EmbeddedFilter"
     				type="chc:EmbeddedFilterType">
@@ -204,7 +242,9 @@
 
     <complexType name="Filter">
     	<complexContent>
-    		<extension base="chc:Method"></extension>
+    		<extension base="chc:Class">
+    			<attribute name="name" type="string"></attribute>
+    		</extension>
     	</complexContent>
     </complexType>
 
@@ -218,6 +258,7 @@
     					</restriction>
     				</simpleType>
     			</attribute>
+    			<attribute name="name" type="string"></attribute>
     		</extension>
     	</simpleContent>
     </complexType>
@@ -252,14 +293,18 @@
     	</complexContent>
     </complexType>
 
-    <complexType name="MetadataProcessorType"></complexType>
+    <complexType name="MetadataProcessorType">
+    	<complexContent>
+    		<extension base="chc:ProcessorType"></extension>
+    	</complexContent>
+    </complexType>
 
-    <complexType name="Method">
-    	<sequence>
-    		<element name="name"
-    			type="chc:StringOrEnvironmentVariable">
-    		</element>
-    		<element name="class" type="chc:Class"></element>
-    	</sequence>
+
+    <complexType name="ParameterType">
+    	<simpleContent>
+    		<extension base="chc:StringOrEnvironmentVariable">
+    			<attribute name="name" type="string"></attribute>
+    		</extension>
+    	</simpleContent>
     </complexType>
 </schema>
