@@ -22,7 +22,41 @@
     			type="chc:StringOrEnvironmentVariable" maxOccurs="1"
     			minOccurs="1">
     		</element>
-    		<element name="Modes" maxOccurs="1" minOccurs="1">
+            <element name="IncludePaths">
+    			<complexType>
+    				<sequence>
+    					<element name="path" type="chc:StringOrEnvironmentVariable" maxOccurs="unbounded" minOccurs="0">
+    					</element>
+    				</sequence>
+    			</complexType>
+    		</element>
+            <element name="ChaosConfiguration" maxOccurs="1" minOccurs="1">
+    			<complexType>
+    				<sequence>
+    					<element name="URL" type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="1">
+    					</element>
+    					<element name="Email" type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="1">
+    					</element>
+    					<element name="Password" type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="1">
+    					</element>
+    					<element name="ClientGUID" type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="0">
+    					</element>
+    				</sequence>
+    			</complexType>
+    		</element>
+            <element name="ExternalClient" maxOccurs="unbounded" minOccurs="0">
+            	<complexType>
+            		<complexContent>
+            			<extension base="chc:Class">
+            				<sequence>
+            					<element name="Parameter" type="chc:ParameterType" maxOccurs="unbounded" minOccurs="0">
+            					</element>
+            				</sequence>
+            				<attribute name="name" type="string"></attribute>
+            			</extension>
+            		</complexContent>
+            	</complexType></element>
+            <element name="Modes" maxOccurs="1" minOccurs="1">
     			<complexType>
     				<sequence>
     					<element name="Mode" type="chc:ModeType"
@@ -55,48 +89,6 @@
     			</complexType>
     		</element>
 
-    		<element name="ChaosConfiguration" maxOccurs="1" minOccurs="1">
-    			<complexType>
-    				<sequence>
-    					<element name="URL"
-    						type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="1">
-    					</element>
-    					<element name="Email"
-    						type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="1">
-    					</element>
-    					<element name="Password"
-    						type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="1">
-    					</element>
-    					<element name="ClientGUID"
-    						type="chc:StringOrEnvironmentVariable" maxOccurs="1"
-    						minOccurs="0">
-    					</element>
-    				</sequence>
-    			</complexType>
-    		</element>
-            <element name="ExternalClient" maxOccurs="unbounded" minOccurs="0">
-            	<complexType>
-            		<complexContent>
-            			<extension base="chc:Class">
-            				<sequence>
-            					<element name="Parameter"
-            						type="chc:ParameterType" maxOccurs="unbounded" minOccurs="0">
-            					</element>
-            				</sequence>
-            				<attribute name="name" type="string"></attribute>
-            			</extension>
-            		</complexContent>
-            	</complexType></element>
-            <element name="IncludePaths">
-    			<complexType>
-    				<sequence>
-    					<element name="path"
-    						type="chc:StringOrEnvironmentVariable" maxOccurs="unbounded"
-    						minOccurs="0">
-    					</element>
-    				</sequence>
-    			</complexType>
-    		</element>
     	</sequence>
     </complexType>
 
@@ -268,7 +260,10 @@
     	<complexContent>
     		<extension base="chc:ProcessorType">
     			<sequence>
-    				<element name="FolderId" type="chc:StringOrEnvironmentVariable"></element>
+    				<element name="FolderId"
+    					type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="1">
+    				</element>
+    				<element name="ObjectTypeId" type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="1"></element>
     			</sequence>
     		</extension>
     	</complexContent>
@@ -296,7 +291,13 @@
 
     <complexType name="MetadataProcessorType">
     	<complexContent>
-    		<extension base="chc:ProcessorType"></extension>
+    		<extension base="chc:ProcessorType">
+    			<sequence>
+    				<element name="validate" type="boolean" maxOccurs="1" minOccurs="1"></element>
+                    <element name="schemaGUID" type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="1">
+    				</element>
+                </sequence>
+    		</extension>
     	</complexContent>
     </complexType>
 

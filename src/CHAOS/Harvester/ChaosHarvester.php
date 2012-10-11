@@ -90,6 +90,47 @@ class ChaosHarvester {
 		// Require the timed lib to time actions.
 		require_once('timed.php');
 		
+		// Parsing external clients
+		$this->_externalClients = array();
+		foreach($this->_configuration->xpath("chc:ExternalClient") as $filter) {
+			/* @var $filter SimpleXMLElement */
+			$attributes = $filter->attributes();
+			
+			$name = strval($attributes->name);
+			//var_dump($methodName);
+			$namespace = strval($attributes->namespace);
+			$className = strval($attributes->className);
+			$this->loadExternalClient($name, $namespace, $className);
+			
+			$parameters = $filter->xpath("chc:Parameter");
+			$params = array();
+			foreach($parameters as $parameter) {
+				/* @var $p SimpleXMLElement */
+				$parameterAttributes = $parameter->attributes();
+				$params[strval($parameterAttributes->name)] = strval($parameter);
+			}
+			$this->_externalClients[$name]->setParameters($params);
+			try {
+				if(!$this->_externalClients[$name]->sanityCheck()) {
+					throw new \RuntimeException("Unknown error during sanity check.");
+				}
+			} catch (RuntimeException $e) {
+				throw new \RuntimeException("External client '$name' failed the sanity check.", null, $e);
+			}
+		}
+		
+		// Parsing chaos configurations
+		$this->_chaosParameters = array();
+		foreach($this->_configuration->xpath("chc:ChaosConfiguration/*") as $parameter) {
+			/* @var $parameter SimpleXMLElement */
+			$this->_chaosParameters[$parameter->getName()] = strval($parameter);
+		}
+		if(!key_exists('ClientGUID', $this->_chaosParameters) || strlen($this->_chaosParameters['ClientGUID']) == 0) {
+			$this->_chaosParameters['ClientGUID'] = self::generateGUID();
+		}
+		$this->_chaos = new \CHAOS\Portal\Client\PortalClient($this->_chaosParameters['URL'], $this->_chaosParameters['ClientGUID']);
+		$this->authenticateChaosSession();
+		
 		// Parsing modes.
 		$this->_modes = array();
 		foreach($this->_configuration->xpath("chc:Modes/chc:Mode") as $mode) {
@@ -113,7 +154,25 @@ class ChaosHarvester {
 			$type = $processor->getName();
 			$namespace = strval($attributes->namespace);
 			$className = strval($attributes->className);
+			
 			$this->loadProcessor($name, $type, $namespace, $className);
+			
+			// Set the parameters which are specific to the processor.
+			if($type === 'ObjectProcessor') {
+				$objectTypeId = $processor->xpath('chc:ObjectTypeId');
+				$this->_processors[$name]->setObjectTypeId(intval(strval($objectTypeId[0])));
+				
+				$folderId = $processor->xpath('chc:FolderId');
+				$this->_processors[$name]->setFolderId(intval(strval($folderId[0])));
+			} elseif($type === 'MetadataProcessor') {
+				$validate = $processor->xpath('chc:validate');
+				$this->_processors[$name]->setValidate(strval($validate[0]) == 'true');
+				
+				$schemaGUID = $processor->xpath('chc:schemaGUID');
+				if(count($schemaGUID) == 1 && strval($schemaGUID) != '') {
+					$this->_processors[$name]->fetchSchema(strval($schemaGUID[0]));
+				}
+			}
 			
 			// Parsing filters
 			$filters = array();
@@ -159,47 +218,6 @@ class ChaosHarvester {
 			
 			$this->_processors[$name]->setFilters($filters);
 		}
-		
-		// Parsing external clients
-		$this->_externalClients = array();
-		foreach($this->_configuration->xpath("chc:ExternalClient") as $filter) {
-			/* @var $filter SimpleXMLElement */
-			$attributes = $filter->attributes();
-			
-			$name = strval($attributes->name);
-			//var_dump($methodName);
-			$namespace = strval($attributes->namespace);
-			$className = strval($attributes->className);
-			$this->loadExternalClient($name, $namespace, $className);
-			
-			$parameters = $filter->xpath("chc:Parameter");
-			$params = array();
-			foreach($parameters as $parameter) {
-				/* @var $p SimpleXMLElement */
-				$parameterAttributes = $parameter->attributes();
-				$params[strval($parameterAttributes->name)] = strval($parameter);
-			}
-			$this->_externalClients[$name]->setParameters($params);
-			try {
-				if(!$this->_externalClients[$name]->sanityCheck()) {
-					throw new \RuntimeException("Unknown error during sanity check.");
-				}
-			} catch (RuntimeException $e) {
-				throw new \RuntimeException("External client '$name' failed the sanity check.", null, $e);
-			}
-		}
-		
-		// Parsing chaos configurations
-		$this->_chaosParameters = array();
-		foreach($this->_configuration->xpath("chc:ChaosConfiguration/*") as $parameter) {
-			/* @var $parameter SimpleXMLElement */
-			$this->_chaosParameters[$parameter->getName()] = strval($parameter);
-		}
-		if(!key_exists('ClientGUID', $this->_chaosParameters) || strlen($this->_chaosParameters['ClientGUID']) == 0) {
-			$this->_chaosParameters['ClientGUID'] = self::generateGUID();
-		}
-		$this->_chaos = new \CHAOS\Portal\Client\PortalClient($this->_chaosParameters['URL'], $this->_chaosParameters['ClientGUID']);
-		$this->authenticateChaosSession();
 	}
 	
 	protected static function extractOptionsFromArguments($arguments) {
@@ -240,16 +258,18 @@ class ChaosHarvester {
 		echo "\n";
 	}
 	
-	public static function info() {
+	public function info() {
 		$args = func_get_args();
 		$args[0] = sprintf("[i] %s\n", $args[0]);
 		call_user_func_array('printf', $args);
 	}
 	
-	public static function debug() {
-		$args = func_get_args();
-		$args[0] = sprintf("[d] %s\n", $args[0]);
-		call_user_func_array('printf', $args);
+	public function debug() {
+		if(key_exists('debug', $this->_options)) {
+			$args = func_get_args();
+			$args[0] = sprintf("[d] %s\n", $args[0]);
+			call_user_func_array('printf', $args);
+		}
 	}
 	
 	public static function generateGUID() {
@@ -414,18 +434,18 @@ class ChaosHarvester {
 		}
 	}
 	
-	public function process($processorName, $externalObject) {
+	public function process($processorName, $externalObject, $shadow = null) {
 		if($processorName == null || strlen($processorName) == 0) {
 			throw new RuntimeException("A processor name has to be choosen.");
 		} elseif(!key_exists($processorName, $this->_processors)) {
-			throw new RuntimeException("No processor named $processor loaded.");
+			throw new RuntimeException("No processor named $processorName loaded.");
 		} else {
 			$this->debug("Processing the external object with the '%s' processor.", $processorName);
 			$processor = $this->_processors[$processorName];
 			/* @var $processor Processor */
 			$filterResult = $processor->passesFilters($externalObject);
 			if($filterResult === true) {
-				$processor->process($externalObject);
+				return $processor->process($externalObject, $shadow);
 			} elseif(is_array($filterResult)) {
 				foreach($filterResult as $rejection) {
 					if($rejection['reason'] === false || strlen($rejection['reason']) == 0) {

@@ -20,6 +20,10 @@ class ObjectShadow extends Shadow {
 	 */
 	public $relatedObjectShadows;
 	
+	public $folderId;
+	
+	public $objectTypeId;
+	
 	public function commit($harvester) {
 		
 	}
