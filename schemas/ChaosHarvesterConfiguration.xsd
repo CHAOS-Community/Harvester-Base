@@ -110,16 +110,21 @@
     	<complexContent>
     		<extension base="chc:Class">
     			<sequence>
-		            <element name="Filters" type="chc:FiltersType" maxOccurs="unbounded" minOccurs="0">
-		    			<annotation>
-		    				<documentation>
-		    					Describes the filters that will be invoked on
-		    					any single external object. A filter determines
-		    					whether or not the external object is included
-		    					or skipped in the harvest.
-		    				</documentation>
-		    			</annotation>
-		    		</element>
+    				<element name="Filters" type="chc:FiltersType"
+    					maxOccurs="unbounded" minOccurs="0">
+    					<annotation>
+    						<documentation>
+    							Describes the filters that will be
+    							invoked on any single external object. A
+    							filter determines whether or not the
+    							external object is included or skipped
+    							in the harvest.
+    						</documentation>
+    					</annotation>
+    				</element>
+    				<element name="Parameter"
+    					type="chc:ParameterType" maxOccurs="unbounded" minOccurs="0">
+    				</element>
     			</sequence>
     			<attribute name="name" type="string"></attribute>
 
@@ -273,17 +278,10 @@
     	<complexContent>
     		<extension base="chc:ProcessorType">
     			<sequence>
-    				<element name="Format">
-    					<complexType>
-    						<sequence>
-                                <element name="Type" type="chc:StringOrEnvironmentVariable">
-    							</element>
-                                <element name="Id"
-    								type="chc:StringOrEnvironmentVariable">
-    							</element>
-    						</sequence>
-    					</complexType>
+    				<element name="FormatId"
+    					type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="1">
     				</element>
+    				<element name="DestinationId" type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="1"></element>
     			</sequence>
     		</extension>
     	</complexContent>

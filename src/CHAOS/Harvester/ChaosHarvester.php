@@ -1,5 +1,9 @@
 <?php
 namespace CHAOS\Harvester;
+use CHAOS\Harvester\Shadows\Shadow;
+
+use CHAOS\Portal\Client\PortalClient;
+
 use \RuntimeException, \SimpleXMLElement, \DOMDocument;
 
 class ChaosHarvester {
@@ -172,7 +176,22 @@ class ChaosHarvester {
 				if(count($schemaGUID) == 1 && strval($schemaGUID) != '') {
 					$this->_processors[$name]->fetchSchema(strval($schemaGUID[0]));
 				}
+			} elseif($type === 'FileProcessor') {
+				$formatId = $processor->xpath('chc:FormatId');
+				$this->_processors[$name]->setFormatId(intval(strval($formatId[0])));
+				
+				$destinationId = $processor->xpath('chc:DestinationId');
+				$this->_processors[$name]->setDestinationId(intval(strval($destinationId[0])));
 			}
+			
+			$parameters = $processor->xpath("chc:Parameter");
+			$params = array();
+			foreach($parameters as $parameter) {
+				/* @var $p SimpleXMLElement */
+				$parameterAttributes = $parameter->attributes();
+				$params[strval($parameterAttributes->name)] = strval($parameter);
+			}
+			$this->_processors[$name]->setParameters($params);
 			
 			// Parsing filters
 			$filters = array();
@@ -206,7 +225,7 @@ class ChaosHarvester {
 				if(key_exists($filterName, $filters)) {
 					throw new RuntimeException("A filter by the name of '$filterName' is already loaded.");
 				} else {
-					$filterObject = $this->loadFilter($filterName, '\CHAOS\Harvester', 'EmbeddedFilter');
+					$filterObject = $this->loadFilter($filterName, '\CHAOS\Harvester\Filters', 'EmbeddedFilter');
 					
 					$filters[$filterName] = $filterObject;
 					/* @var $filterObject EmbeddedFilter */
@@ -258,6 +277,19 @@ class ChaosHarvester {
 		echo "\n";
 	}
 	
+	public static function generateGUID() {
+		mt_srand((double)microtime()*10000); // optional for php 4.2.0 and up.
+		$charid = strtoupper(md5(uniqid(rand(), true)));
+		$hyphen = chr(45); // "-"
+		$uuid = ''
+			.substr($charid, 0, 8).$hyphen
+			.substr($charid, 8, 4).$hyphen
+			.substr($charid,12, 4).$hyphen
+			.substr($charid,16, 4).$hyphen
+			.substr($charid,20,12);
+		return $uuid;
+	}
+	
 	public function info() {
 		$args = func_get_args();
 		$args[0] = sprintf("[i] %s\n", $args[0]);
@@ -272,17 +304,20 @@ class ChaosHarvester {
 		}
 	}
 	
-	public static function generateGUID() {
-		mt_srand((double)microtime()*10000); // optional for php 4.2.0 and up.
-		$charid = strtoupper(md5(uniqid(rand(), true)));
-		$hyphen = chr(45); // "-"
-		$uuid = ''
-			.substr($charid, 0, 8).$hyphen
-			.substr($charid, 8, 4).$hyphen
-			.substr($charid,12, 4).$hyphen
-			.substr($charid,16, 4).$hyphen
-			.substr($charid,20,12);
-		return $uuid;
+	public function getOptions() {
+		return $this->_options;
+	}
+	
+	public function hasOption($name) {
+		return key_exists($name, $this->_options);
+	}
+	
+	public function getOption($name) {
+		if($name == null || !key_exists($name, $this->_options)) {
+			return null;
+		} else {
+			return $this->_options[$name];
+		}
 	}
 	
 	/**
@@ -360,7 +395,7 @@ class ChaosHarvester {
 	 * @return Mode|null The mode or null if the mode could not be loaded.
 	 */
 	protected function loadMode($name, $type, $namespace, $className) {
-		$modeInterface = sprintf('CHAOS\Harvester\%sMode', $type);
+		$modeInterface = sprintf('CHAOS\Harvester\Modes\%sMode', $type);
 		$mode = $this->loadClass($name, $namespace, $className, array($modeInterface));
 		if(key_exists($name, $this->_modes)) {
 			throw new RuntimeException("A mode by the name of '$name' is already loaded.");
@@ -370,7 +405,7 @@ class ChaosHarvester {
 	}
 	
 	protected function loadProcessor($name, $type, $namespace, $className) {
-		$processorSuperclass = sprintf('CHAOS\Harvester\%s', $type);
+		$processorSuperclass = sprintf('CHAOS\Harvester\Processors\%s', $type);
 		$processor = $this->loadClass($name, $namespace, $className, array($processorSuperclass));
 		if(key_exists($name, $this->_processors)) {
 			throw new RuntimeException("A processor by the name of '$name' is already loaded.");
@@ -380,7 +415,7 @@ class ChaosHarvester {
 	}
 	
 	protected function loadFilter($name, $namespace, $className) {
-		return $this->loadClass($name, $namespace, $className, array('CHAOS\Harvester\Filter'));
+		return $this->loadClass($name, $namespace, $className, array('CHAOS\Harvester\Filters\Filter'));
 	}
 	
 	protected function loadExternalClient($name, $namespace, $className) {
@@ -408,6 +443,9 @@ class ChaosHarvester {
 		}
 	}
 	
+	/**
+	 * @return \CHAOS\Portal\Client\IPortalClient The current chaos client.
+	 */
 	public function getChaosClient() {
 		return $this->_chaos;
 	}
@@ -420,20 +458,29 @@ class ChaosHarvester {
 		
 		if(key_exists($mode, $this->_modes)) {
 			self::info("Starting harvester in '%s' mode.", $mode);
-			if($this->_modes[$mode] instanceof AllMode) {
+			if($this->_modes[$mode] instanceof Modes\AllMode) {
 				$this->_modes[$mode]->execute();
-			} else if($this->_modes[$mode] instanceof SingleByReferenceMode) {
+			} else if($this->_modes[$mode] instanceof Modes\SingleByReferenceMode) {
 				if(!key_exists('reference', $this->_options)) {
 					trigger_error('You have to specify a --reference={reference} in the '.$mode.' mode.', E_USER_ERROR);
 				}
 				$reference = $this->_options['reference'];
 				$this->_modes[$mode]->execute($reference);
+			} else {
+				throw new RuntimeException("Mode type is not supported.");
 			}
 		} else {
 			throw new RuntimeException("Mode '$mode' is not supported, please choose from: ".implode(', ', array_keys($this->_modes)));
 		}
 	}
 	
+	/**
+	 * Invoke a registered processor.
+	 * @param string $processorName The name of the processor to invoke.
+	 * @param unknown_type $externalObject The external object from the external service.
+	 * @param \CHAOS\Harvester\Shadows\Shadow $shadow The shadow to build upon.
+	 * @return \CHAOS\Harvester\Shadows\Shadow The resulting shadow.
+	 */
 	public function process($processorName, $externalObject, $shadow = null) {
 		if($processorName == null || strlen($processorName) == 0) {
 			throw new RuntimeException("A processor name has to be choosen.");

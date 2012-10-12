@@ -1,5 +1,5 @@
 <?php
-namespace CHAOS\Harvester;
+namespace CHAOS\Harvester\Modes;
 abstract class SingleByReferenceMode extends Mode {
 	/**
 	 * Execute the harvester in the specified mode.

@@ -1,5 +1,5 @@
 <?php
-namespace CHAOS\Harvester;
+namespace CHAOS\Harvester\Modes;
 abstract class AllMode extends Mode {
 	
 	/**

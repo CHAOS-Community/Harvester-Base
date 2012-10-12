@@ -1,5 +1,5 @@
 <?php
-namespace CHAOS\Harvester;
+namespace CHAOS\Harvester\Processors;
 abstract class Processor {
 	
 	/**
@@ -23,6 +23,17 @@ abstract class Processor {
 	
 	public function setFilters($filters) {
 		$this->_filters = $filters;
+	}
+	
+	/**
+	 * An array of custom parameters.
+	 * @var string[]
+	 */
+	protected $_parameters;
+	
+	
+	public function setParameters($parameters) {
+		$this->_parameters = $parameters;
 	}
 	
 	/**

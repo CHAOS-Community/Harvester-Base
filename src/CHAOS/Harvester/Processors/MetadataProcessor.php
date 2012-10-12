@@ -1,11 +1,11 @@
 <?php
-namespace CHAOS\Harvester;
+namespace CHAOS\Harvester\Processors;
 
 use CHAOS\Harvester\Shadows\MetadataShadow;
 use CHAOS\Harvester\Shadows\ObjectShadow;
 use \RuntimeException;
 
-abstract class MetadataProcessor extends \CHAOS\Harvester\Processor {
+abstract class MetadataProcessor extends Processor {
 	
 	protected $_schemaSource;
 	

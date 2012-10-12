@@ -1,5 +1,5 @@
 <?php
-namespace CHAOS\Harvester;
+namespace CHAOS\Harvester\Filters;
 abstract class Filter {
 	
 	/**

@@ -10,6 +10,6 @@ class FileShadow extends Shadow {
 	public $folderPath;
 	
 	public function commit($harvester) {
-
+		$harvester->debug("Committing the shadow of a file.");
 	}
 }

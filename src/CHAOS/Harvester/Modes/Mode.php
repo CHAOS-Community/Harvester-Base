@@ -1,6 +1,6 @@
 <?php
-namespace CHAOS\Harvester;
-abstract class Mode implements Loadable {
+namespace CHAOS\Harvester\Modes;
+abstract class Mode implements \CHAOS\Harvester\Loadable {
 	
 	/**
 	 * A reference to the harvester.

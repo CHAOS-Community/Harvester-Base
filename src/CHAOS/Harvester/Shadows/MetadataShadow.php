@@ -9,6 +9,6 @@ class MetadataShadow extends Shadow {
 	public $xml;
 	
 	public function commit($harvester) {
-
+		$harvester->debug("Committing the shadow of some metadata.");
 	}
 }

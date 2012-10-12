@@ -1,5 +1,5 @@
 <?php
-namespace CHAOS\Harvester;
+namespace CHAOS\Harvester\Filters;
 class EmbeddedFilter extends Filter implements \CHAOS\Harvester\Loadable {
 	
 	public function __construct($harvester, $name) {

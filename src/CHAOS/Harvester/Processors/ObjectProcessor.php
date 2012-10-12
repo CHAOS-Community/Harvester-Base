@@ -1,5 +1,5 @@
 <?php
-namespace CHAOS\Harvester;
+namespace CHAOS\Harvester\Processors;
 abstract class ObjectProcessor extends Processor {
 	/**
 	 * The object type id of the objects that this object processor produces.
