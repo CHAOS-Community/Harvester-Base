@@ -104,8 +104,6 @@ class ChaosHarvester {
 			//var_dump($methodName);
 			$namespace = strval($attributes->namespace);
 			$className = strval($attributes->className);
-			$this->loadExternalClient($name, $namespace, $className);
-			
 			$parameters = $filter->xpath("chc:Parameter");
 			$params = array();
 			foreach($parameters as $parameter) {
@@ -113,7 +111,8 @@ class ChaosHarvester {
 				$parameterAttributes = $parameter->attributes();
 				$params[strval($parameterAttributes->name)] = strval($parameter);
 			}
-			$this->_externalClients[$name]->setParameters($params);
+			$this->loadExternalClient($name, $namespace, $className, $params);
+			
 			try {
 				if(!$this->_externalClients[$name]->sanityCheck()) {
 					throw new \RuntimeException("Unknown error during sanity check.");
@@ -161,7 +160,14 @@ class ChaosHarvester {
 			$namespace = strval($attributes->namespace);
 			$className = strval($attributes->className);
 			
-			$this->loadProcessor($name, $type, $namespace, $className);
+			$parameters = $processor->xpath("chc:Parameter");
+			$params = array();
+			foreach($parameters as $parameter) {
+				/* @var $p SimpleXMLElement */
+				$parameterAttributes = $parameter->attributes();
+				$params[strval($parameterAttributes->name)] = strval($parameter);
+			}
+			$this->loadProcessor($name, $type, $namespace, $className, $params);
 			
 			// Set the parameters which are specific to the processor.
 			if($type === 'ObjectProcessor') {
@@ -176,7 +182,7 @@ class ChaosHarvester {
 				
 				$schemaGUID = $processor->xpath('chc:schemaGUID');
 				if(count($schemaGUID) == 1 && strval($schemaGUID) != '') {
-					$this->_processors[$name]->fetchSchema(strval($schemaGUID[0]));
+					$this->_processors[$name]->fetchSchema(trim(strval($schemaGUID[0])));
 				}
 			} elseif($type === 'FileProcessor') {
 				$formatId = $processor->xpath('chc:FormatId');
@@ -185,15 +191,6 @@ class ChaosHarvester {
 				$destinationId = $processor->xpath('chc:DestinationId');
 				$this->_processors[$name]->setDestinationId(intval(strval($destinationId[0])));
 			}
-			
-			$parameters = $processor->xpath("chc:Parameter");
-			$params = array();
-			foreach($parameters as $parameter) {
-				/* @var $p SimpleXMLElement */
-				$parameterAttributes = $parameter->attributes();
-				$params[strval($parameterAttributes->name)] = strval($parameter);
-			}
-			$this->_processors[$name]->setParameters($params);
 			
 			// Parsing filters
 			$filters = array();
@@ -368,7 +365,7 @@ class ChaosHarvester {
 		}
 	}
 	
-	protected function loadClass($name, $namespace, $className, $requiredSuperclasses = array(), $requiredInterfaces = array()) {
+	protected function loadClass($name, $namespace, $className, $requiredSuperclasses = array(), $requiredInterfaces = array(), $parameters = array()) {
 		$requiredInterfaces[] = 'CHAOS\Harvester\Loadable';
 		$class = $namespace . "\\" . $className;
 		
@@ -385,7 +382,7 @@ class ChaosHarvester {
 			}
 		}
 		// We came this far ..
-		return new $class($this, $name);
+		return new $class($this, $name, $parameters);
 	}
 	
 	/**
@@ -406,9 +403,9 @@ class ChaosHarvester {
 		}
 	}
 	
-	protected function loadProcessor($name, $type, $namespace, $className) {
+	protected function loadProcessor($name, $type, $namespace, $className, $parameters = null) {
 		$processorSuperclass = sprintf('CHAOS\Harvester\Processors\%s', $type);
-		$processor = $this->loadClass($name, $namespace, $className, array($processorSuperclass));
+		$processor = $this->loadClass($name, $namespace, $className, array($processorSuperclass), array(), $parameters);
 		if(key_exists($name, $this->_processors)) {
 			throw new RuntimeException("A processor by the name of '$name' is already loaded.");
 		} else {
@@ -420,8 +417,8 @@ class ChaosHarvester {
 		return $this->loadClass($name, $namespace, $className, array('CHAOS\Harvester\Filters\Filter'));
 	}
 	
-	protected function loadExternalClient($name, $namespace, $className) {
-		$externalClient = $this->loadClass($name, $namespace, $className, array(), array('CHAOS\Harvester\IExternalClient'));
+	protected function loadExternalClient($name, $namespace, $className, $parameters) {
+		$externalClient = $this->loadClass($name, $namespace, $className, array(), array('CHAOS\Harvester\IExternalClient'), $parameters);
 		if(key_exists($name, $this->_externalClients)) {
 			throw new RuntimeException("An external client by the name of '$name' is already loaded.");
 		} else {

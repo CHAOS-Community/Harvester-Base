@@ -1,6 +1,6 @@
 <?php
 namespace CHAOS\Harvester\Processors;
-abstract class Processor {
+abstract class Processor implements \CHAOS\Harvester\Loadable {
 	
 	/**
 	 * A reference to the harvester.
