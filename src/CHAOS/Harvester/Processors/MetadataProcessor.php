@@ -8,9 +8,11 @@ use \RuntimeException;
 abstract class MetadataProcessor extends Processor {
 	
 	protected $_schemaSource;
+	protected $_schemaGUID;
 	
 	public function fetchSchema($schemaGUID) {
 		$this->_harvester->debug("Fetching schema: %s", $schemaGUID);
+		$this->_schemaGUID = $schemaGUID;
 		
 		$response = $this->_harvester->getChaosClient()->MetadataSchema()->Get($schemaGUID);
 		if(!$response->WasSuccess() || !$response->MCM()->WasSuccess() || $response->MCM()->Count() < 1) {
@@ -32,6 +34,7 @@ abstract class MetadataProcessor extends Processor {
 		assert($shadow instanceof ObjectShadow);
 	
 		$metadata = new MetadataShadow();
+		$metadata->metadataSchemaGUID = $this->_schemaGUID;
 		$metadata->xml = $this->generateMetadata($externalObject, $shadow);
 		if($this->_validate === true) {
 			$dom = dom_import_simplexml($metadata->xml)->ownerDocument;
