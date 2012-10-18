@@ -4,10 +4,13 @@ namespace CHAOS\Harvester\Processors;
 use CHAOS\Harvester\Shadows\MetadataShadow;
 use CHAOS\Harvester\Shadows\ObjectShadow;
 use \RuntimeException;
+use \XSLTProcessor;
+use \DOMDocument;
+use \SimpleXMLElement;
 
 class XSLTMetadataProcessor extends MetadataProcessor {
 	
-	protected $stylesheet;
+	protected $_processor;
 	
 	public function __construct($harvester, $name, $parameters = array()) {
 		$this->_harvester = $harvester;
@@ -20,13 +23,43 @@ class XSLTMetadataProcessor extends MetadataProcessor {
 			throw new RuntimeException('The "stylesheet" parameter ('.$stylesheet.') of a XSLTMetadataProcessor is not readable.');
 		}
 		
-		// TODO: Load the stylesheet into the stylesheet field.
+		$this->_processor = new XSLTProcessor();
+		libxml_clear_errors();
+		$stylesheetXSL = simplexml_load_file($stylesheet);
+		if($stylesheetXSL === false) {
+			$errors = array();
+			foreach(libxml_get_errors() as $error) {
+				$errors[] = sprintf("%s [line %u, column %u]", $error->message, $error->line, $error->column);
+			}
+			throw new RuntimeException('Cannot load the XSLT stylesheet: '. implode(', ', $errors));
+		}
+		$success = $this->_processor->importStylesheet($stylesheetXSL);
+		if($success === false) {
+			throw new RuntimeException("Couldn't import stylesheet.");
+		}
 	}
 	
 	public function generateMetadata($externalObject, $shadow = null) {
 		$this->_harvester->debug(__CLASS__." is generating metadata.");
-		// TODO: Use the $stylesheet to transform the $externalObject into a metadata xml
-		// blob that is appended to the $shadow's list of metadata shadows.
+		
+		if($externalObject instanceof DOMDocument) {
+			$dom = $externalObject;
+		} elseif($externalObject instanceof SimpleXMLElement) {
+			$dom = dom_import_simplexml($externalObject)->ownerDocument;
+		} else {
+			throw new RuntimeException("Cannot generate XMSL metadata from an external object of type ".get_class($externalObject));
+		}
+		
+		$this->_processor->registerPHPFunctions();
+		if(is_array($shadow->extras)) {
+			foreach($shadow->extras as $key => $value) {
+				if(is_string($value) || is_numeric($value)) {
+					$success = $this->_processor->setParameter('', $key, $value);
+				}
+			}
+		}
+		$result = $this->_processor->transformToDoc($dom);
+		return simplexml_import_dom($result);
 	}
 	
 }

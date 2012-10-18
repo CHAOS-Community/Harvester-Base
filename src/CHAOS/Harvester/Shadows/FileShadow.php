@@ -38,12 +38,13 @@ class FileShadow extends Shadow {
 			trigger_error('The shadow given as $parent argument has to be initialized and of type Object Shadow');
 		}
 		$object = $parent->getObject($harvester);
+		
 		$file = array_filter($object->Files, array($this, 'matchFile'));
 		if(count($file) == 1) {
 			$file = array_pop($file);
 		} elseif(count($file) > 1) {
 			$file = array_pop($file);
-			trigger_error('It looks like the chaos object has more than one metadata of the specified schema (SchemaGUID = ' .$this->metadataSchemaGUID. ').', E_USER_WARNING);
+			trigger_error('It looks like the chaos object has more than one of the same file.', E_USER_WARNING);
 		} else {
 			$file = null;
 		}
@@ -58,7 +59,9 @@ class FileShadow extends Shadow {
 				// Commit any parent files before this.
 				$this->parentFileID = $this->parentFileShadow->commit($harvester)->ID;
 			}
-			$harvester->debug('This file is a child of the file with ID = '.$this->parentFileID);
+			if($this->parentFileID != null) {
+				$harvester->debug('This file is a child of the file with ID = '.$this->parentFileID);
+			}
 			
 			$response = $harvester->getChaosClient()->File()->Create($object->GUID, $this->parentFileID, $this->formatID, $this->destinationID, $this->filename, $this->originalFilename, $this->folderPath);
 			if(!$response->WasSuccess()) {
@@ -75,13 +78,29 @@ class FileShadow extends Shadow {
 	}
 	
 	protected function matchFile($file) {
-		// TODO, consider checking if $this->folderPath is in the URL.
+		var_dump($file);
+		exit;
 		if($this->originalFilename != $file->OriginalFilename) {
 			return false;
 		} elseif($this->formatID != $file->FormatID) {
 			return false;
+		} elseif(strstr($file->URL, $this->folderPath) === false) {
+			// This actually depends on how the destination is specified in the chaos service.
+			return false;
 		} else {
 			return true;
 		}
+	}
+	
+	
+	/**
+	 * Generates a function that can be used in an array_filter to select just the files
+	 * with same original filename.
+	 * @param FileShadow $f
+	 */
+	public static function hasSameOriginalFilenameAndFolderPath($f) {
+		return function($file) use($f) {
+			return $f->originalFilename == $file->originalFilename && $f->folderPath == $file->folderPath;
+		};
 	}
 }

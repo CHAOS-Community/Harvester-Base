@@ -93,6 +93,7 @@ class ChaosHarvester {
 		
 		// Require the timed lib to time actions.
 		require_once('timed.php');
+		timed(); // Tick tack, time is ticking.
 		
 		// Parsing external clients
 		$this->_externalClients = array();
@@ -181,8 +182,13 @@ class ChaosHarvester {
 				$this->_processors[$name]->setValidate(strval($validate[0]) == 'true');
 				
 				$schemaGUID = $processor->xpath('chc:schemaGUID');
-				if(count($schemaGUID) == 1 && strval($schemaGUID) != '') {
-					$this->_processors[$name]->fetchSchema(trim(strval($schemaGUID[0])));
+				$schemaLocation = $processor->xpath('chc:schemaLocation');
+				if(count($schemaGUID) == 1 && strlen(trim($schemaGUID[0])) > 0) {
+					if(count($schemaLocation) == 1 && strlen(trim($schemaLocation[0])) > 0) {
+						$this->_processors[$name]->fetchSchema(trim($schemaGUID[0]), trim($schemaLocation[0]));
+					} else {
+						$this->_processors[$name]->fetchSchema(trim($schemaGUID[0]));
+					}
 				}
 			} elseif($type === 'FileProcessor') {
 				$formatId = $processor->xpath('chc:FormatId');

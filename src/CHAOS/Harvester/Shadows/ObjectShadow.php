@@ -31,6 +31,13 @@ class ObjectShadow extends Shadow {
 	public $query;
 	
 	/**
+	 * An associative array of extra information exchanged between the different processors
+	 * building up the shadow.
+	 * @var string[string]
+	 */
+	public $extras = array();
+	
+	/**
 	 * The chaos object from the service.
 	 * @var \stdClass Chaos object.
 	 */
@@ -88,6 +95,7 @@ class ObjectShadow extends Shadow {
 	 */
 	public function getOrCreate($harvester) {
 		$chaos = $harvester->getChaosClient();
+		
 		// TODO: Consider sorting by DateCreated.
 		$response = $chaos->Object()->Get($this->query, 'DateCreated+desc', null, 0, 1, true, true, true);
 		if(!$response->WasSuccess()) {
@@ -106,6 +114,7 @@ class ObjectShadow extends Shadow {
 			if($response->MCM()->TotalCount() == 1) {
 				$results = $response->MCM()->Results();
 				$object = $results[0];
+				$harvester->info("Created a new object in the service with GUID = %s.", $object->GUID);
 			} else {
 				throw new RuntimeException("The service didn't respond with a single object when creating it.");
 			}

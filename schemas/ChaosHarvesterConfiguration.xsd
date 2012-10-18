@@ -129,15 +129,6 @@
     			<attribute name="name" type="string"></attribute>
 
 
-    			<attribute name="type">
-    				<simpleType>
-    					<restriction base="string">
-    						<enumeration value="ObjectProcessor"></enumeration>
-    						<enumeration value="MetadataProcessor"></enumeration>
-    						<enumeration value="FileProcessor"></enumeration>
-    					</restriction>
-    				</simpleType>
-    			</attribute>
     		</extension>
     	</complexContent>
     </complexType>
@@ -291,10 +282,17 @@
     	<complexContent>
     		<extension base="chc:ProcessorType">
     			<sequence>
-    				<element name="validate" type="boolean" maxOccurs="1" minOccurs="1"></element>
-                    <element name="schemaGUID" type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="1">
+    				<element name="validate" type="boolean"
+    					maxOccurs="1" minOccurs="1">
     				</element>
-                </sequence>
+    				<element name="schemaGUID"
+    					type="chc:StringOrEnvironmentVariable" maxOccurs="1"
+    					minOccurs="1">
+    				</element>
+    				<element name="schemaLocation"
+    					type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="0">
+    				</element>
+    			</sequence>
     		</extension>
     	</complexContent>
     </complexType>

@@ -4,22 +4,34 @@ namespace CHAOS\Harvester\Processors;
 use CHAOS\Harvester\Shadows\MetadataShadow;
 use CHAOS\Harvester\Shadows\ObjectShadow;
 use \RuntimeException;
+use \Exception;
 
 abstract class MetadataProcessor extends Processor {
 	
 	protected $_schemaSource;
 	protected $_schemaGUID;
 	
-	public function fetchSchema($schemaGUID) {
-		$this->_harvester->debug("Fetching schema: %s", $schemaGUID);
+	public function fetchSchema($schemaGUID, $schemaLocation = null) {
+		if($schemaLocation != null) {
+			$this->_harvester->debug("Fetching schema: %s (%s)", $schemaGUID, $schemaLocation);
+		} else {
+			$this->_harvester->debug("Fetching schema: %s", $schemaGUID);
+		}
 		$this->_schemaGUID = $schemaGUID;
 		
-		$response = $this->_harvester->getChaosClient()->MetadataSchema()->Get($this->_schemaGUID);
-		if(!$response->WasSuccess() || !$response->MCM()->WasSuccess() || $response->MCM()->Count() < 1) {
-			throw new RuntimeException("Failed to fetch XML schemas from the Chaos system, for schema GUID '$this->_schemaGUID'.");
+		if($schemaLocation == null) {
+			$response = $this->_harvester->getChaosClient()->MetadataSchema()->Get($this->_schemaGUID);
+			if(!$response->WasSuccess() || !$response->MCM()->WasSuccess() || $response->MCM()->Count() < 1) {
+				throw new RuntimeException("Failed to fetch XML schemas from the Chaos system, for schema GUID '$this->_schemaGUID'.");
+			}
+			$schemas = $response->MCM()->Results();
+			$this->_schemaSource = $schemas[0]->SchemaXML;
+		} else {
+			if(!is_readable($schemaLocation)) {
+				throw new RuntimeException("Schema ($schemaLocation) is unreadable.");
+			}
+			$this->_schemaSource = file_get_contents($schemaLocation);
 		}
-		$schemas = $response->MCM()->Results();
-		$this->_schemaSource = $schemas[0]->SchemaXML;
 	}
 	
 	protected $_validate;
@@ -35,13 +47,20 @@ abstract class MetadataProcessor extends Processor {
 	
 		$metadata = new MetadataShadow();
 		$metadata->metadataSchemaGUID = $this->_schemaGUID;
+		timed();
 		$metadata->xml = $this->generateMetadata($externalObject, $shadow);
+		timed('generating-metadata');
+		if($metadata->xml == null) {
+			throw new Exception("An error occured when generating the metadata, check your implementation.");
+		}
 		if($this->_validate === true) {
+			timed();
 			$dom = dom_import_simplexml($metadata->xml)->ownerDocument;
 			$dom->formatOutput = true;
-			if(!$dom->schemaValidateSource($this->_schemaSource)) {
-				return $shadow;
+			if($dom->schemaValidateSource($this->_schemaSource) === false) {
+				throw new RuntimeException("The generated metadata didn't match the schema.");
 			}
+			timed('validating-metadata');
 		}
 		$shadow->metadataShadows[] = $metadata;
 		return $shadow;
