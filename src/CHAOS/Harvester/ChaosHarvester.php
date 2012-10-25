@@ -355,7 +355,7 @@ class ChaosHarvester {
 				}
 			}
 		} else {
-			self::warning(sprintf('Warning: The %s environment variable is not sat - cannot validate configuration file.', self::CHC_SCHEMA_ENVVAR));
+			trigger_error(sprintf('Warning: The %s environment variable is not sat - cannot validate configuration file.', self::CHC_SCHEMA_ENVVAR), E_USER_WARNING);
 		}
 		return true;
 	}

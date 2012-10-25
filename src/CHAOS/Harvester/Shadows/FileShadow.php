@@ -78,8 +78,6 @@ class FileShadow extends Shadow {
 	}
 	
 	protected function matchFile($file) {
-		var_dump($file);
-		exit;
 		if($this->originalFilename != $file->OriginalFilename) {
 			return false;
 		} elseif($this->formatID != $file->FormatID) {

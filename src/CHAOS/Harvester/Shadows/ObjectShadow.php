@@ -1,5 +1,6 @@
 <?php
 namespace CHAOS\Harvester\Shadows;
+use \RuntimeException;
 class ObjectShadow extends Shadow {
 	
 	/**
