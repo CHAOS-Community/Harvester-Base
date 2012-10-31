@@ -1,6 +1,7 @@
 <?php
 namespace CHAOS\Harvester;
 use CHAOS\Harvester\Shadows\Shadow;
+use CHAOS\Harvester\Filters\EmbeddedFilter;
 
 use CHAOS\Portal\Client\PortalClient;
 
@@ -236,6 +237,8 @@ class ChaosHarvester {
 					/* @var $filterObject EmbeddedFilter */
 					if($filterObject instanceof EmbeddedFilter) {
 						$filterObject->setCode(strval($filter));
+					} else {
+						trigger_error("Error loading the filter named $filterName", E_USER_ERROR);
 					}
 				}
 			}
@@ -528,6 +531,7 @@ class ChaosHarvester {
 						$this->info("Skipped because the external object didn't pass the %s filter, because: %s", $rejection['name'], $rejection['reason']);
 					}
 				}
+				return $processor->skip($externalObject, $shadow);
 			}
 		}
 	}
