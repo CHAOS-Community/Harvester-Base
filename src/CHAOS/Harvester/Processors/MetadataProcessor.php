@@ -27,10 +27,16 @@ abstract class MetadataProcessor extends Processor {
 			$schemas = $response->MCM()->Results();
 			$this->_schemaSource = $schemas[0]->SchemaXML;
 		} else {
-			if(!is_readable($schemaLocation)) {
-				throw new RuntimeException("Schema ($schemaLocation) is unreadable.");
+			if(strstr($schemaLocation, 'http://') === 0 || strstr($schemaLocation, 'https://') === 0) {
+				$this->_schemaSource = file_get_contents($schemaLocation);
+			} else {
+				$schemaLocation = $this->_harvester->resolvePath($schemaLocation);
+				if($schemaLocation == null) {
+					throw new RuntimeException("Schema ($schemaLocation) is unreadable.");
+				} else {
+					$this->_schemaSource = file_get_contents($schemaLocation);
+				}
 			}
-			$this->_schemaSource = file_get_contents($schemaLocation);
 		}
 	}
 	

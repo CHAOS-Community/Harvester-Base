@@ -19,8 +19,11 @@ class XSLTMetadataProcessor extends MetadataProcessor {
 			throw new RuntimeException('An XSLTMetadataProcessor has to have a "stylesheet" parameter.');
 		}
 		$stylesheet = $parameters['stylesheet'];
-		if(!is_readable($stylesheet)) {
-			throw new RuntimeException('The "stylesheet" parameter ('.$stylesheet.') of a XSLTMetadataProcessor is not readable.');
+		if(strstr($stylesheet, 'http://') !== 0 && strstr($stylesheet, 'https://') !== 0) {
+			$stylesheet = $this->_harvester->resolvePath($stylesheet);
+			if($stylesheet == null) {
+				throw new RuntimeException('The "stylesheet" parameter ('.$parameters['stylesheet'].') of a XSLTMetadataProcessor is not readable.');
+			}
 		}
 		
 		$this->_processor = new XSLTProcessor();

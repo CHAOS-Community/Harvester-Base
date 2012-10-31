@@ -362,12 +362,28 @@ class ChaosHarvester {
 	
 	protected function processIncludePath() {
 		foreach($this->_configuration->IncludePaths->path as $path) {
-			$path = strval($path);
+			$path = $this->resolvePath($path);
 			if(!is_dir($path)) {
-				trigger_error('Include path '.$path.' relative to '.__DIR__.' is not a valid directory.', E_USER_ERROR);
+				trigger_error("Include path '$path' relative to '".__DIR__."' is not a valid directory.", E_USER_ERROR);
 			} else {
 				set_include_path(get_include_path() . PATH_SEPARATOR . $path);
 			}
+		}
+	}
+	
+	/**
+	 * Resolves a path to some filename or folder, possibly appending the BasePath of the configuration.
+	 * @param string $path
+	 * @return string|null An abstract 
+	 */
+	public function resolvePath($path) {
+		$alternativePath = strval($this->_configuration->BasePath) . DIRECTORY_SEPARATOR . $path;
+		if(is_file($path) || is_dir($path)) {
+			return realpath($path);
+		} elseif(is_file($alternativePath) || is_dir($alternativePath)) {
+			return realpath($alternativePath);
+		} else {
+			return null;
 		}
 	}
 	
