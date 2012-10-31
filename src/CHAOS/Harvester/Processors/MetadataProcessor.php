@@ -22,7 +22,14 @@ abstract class MetadataProcessor extends Processor {
 		if($schemaLocation == null) {
 			$response = $this->_harvester->getChaosClient()->MetadataSchema()->Get($this->_schemaGUID);
 			if(!$response->WasSuccess() || !$response->MCM()->WasSuccess() || $response->MCM()->Count() < 1) {
-				throw new RuntimeException("Failed to fetch XML schemas from the Chaos system, for schema GUID '$this->_schemaGUID'.");
+				if(!$response->WasSuccess()) {
+					$message = $response->Error()->Message();
+				} elseif(!$response->MCM()->WasSuccess()) {
+					$message = "(MCM) ".$response->MCM()->Error()->Message();
+				} else {
+					$message = "No message ..";
+				}
+				throw new RuntimeException("Failed to fetch XML schemas from the Chaos system, for schema GUID '$this->_schemaGUID': ".$message);
 			}
 			$schemas = $response->MCM()->Results();
 			$this->_schemaSource = $schemas[0]->SchemaXML;
