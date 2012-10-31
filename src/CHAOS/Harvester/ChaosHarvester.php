@@ -362,11 +362,11 @@ class ChaosHarvester {
 	
 	protected function processIncludePath() {
 		foreach($this->_configuration->IncludePaths->path as $path) {
-			$path = $this->resolvePath($path);
-			if(!is_dir($path)) {
+			$resolvedPath = $this->resolvePath($path);
+			if($resolvedPath == null || !is_dir($resolvedPath)) {
 				trigger_error("Include path '$path' relative to '".__DIR__."' is not a valid directory.", E_USER_ERROR);
 			} else {
-				set_include_path(get_include_path() . PATH_SEPARATOR . $path);
+				set_include_path(get_include_path() . PATH_SEPARATOR . $resolvedPath);
 			}
 		}
 	}
