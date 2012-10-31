@@ -98,6 +98,7 @@ class ObjectShadow extends Shadow {
 		$chaos = $harvester->getChaosClient();
 		
 		// TODO: Consider sorting by DateCreated.
+		$harvester->debug("Trying to get the CHAOS object from ".$this->query);
 		$response = $chaos->Object()->Get($this->query, 'DateCreated+desc', null, 0, 1, true, true, true);
 		if(!$response->WasSuccess()) {
 			throw new RuntimeException("General error when getting the object from the chaos service: " . $response->Error()->Message());

@@ -458,9 +458,9 @@ class ChaosHarvester {
 		$result = $this->_chaos->EmailPassword()->Login($this->_chaosParameters['Email'], $this->_chaosParameters['Password']);
 		timed('chaos');
 		if(!$result->WasSuccess()) {
-			throw new \RuntimeException("Couldn't authenticate the session, error in request.");
+			throw new \RuntimeException("Couldn't authenticate the session, error in request: ".$result->Error()->Message());
 		} elseif(!$result->EmailPassword()->WasSuccess()) {
-			throw new \RuntimeException("Couldn't authenticate the session, please check the CHAOS_EMAIL and CHAOS_PASSWORD parameters.");
+			throw new \RuntimeException("Couldn't authenticate the session, please check the CHAOS_EMAIL and CHAOS_PASSWORD parameters: ".$result->EmailPassword()->Error()->Message());
 		} else {
 			self::info("Chaos session was successfully authenticated: %s", $this->_chaos->SessionGUID());
 		}
