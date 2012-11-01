@@ -59,7 +59,7 @@ abstract class Processor implements \CHAOS\Harvester\Loadable {
 		foreach($this->_filters as $name => $f) {
 			/* @var $f Filter */
 			$result = $f->passes($externalObject);
-			if($result !== true) {
+			if($result !== true && $result !== null) {
 				$finalResult[] = array('name' => $name, 'filter' => $f, 'reason' => $result);
 			}
 		}

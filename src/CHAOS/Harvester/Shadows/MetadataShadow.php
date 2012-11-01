@@ -17,7 +17,7 @@ class MetadataShadow extends Shadow {
 		if($parent == null || !$parent instanceof ObjectShadow) {
 			trigger_error('The shadow given as $parent argument has to be initialized and of type Object Shadow');
 		}
-		$object = $parent->getObject($harvester);
+		$object = $parent->get($harvester);
 		$metadata = array_filter($object->Metadatas, array($this, 'matchMetadataSchema'));
 		$revisionID = null;
 		if(count($metadata) == 1) {

@@ -37,7 +37,7 @@ class FileShadow extends Shadow {
 		if($parent == null || !$parent instanceof ObjectShadow) {
 			trigger_error('The shadow given as $parent argument has to be initialized and of type Object Shadow');
 		}
-		$object = $parent->getObject($harvester);
+		$object = $parent->get($harvester);
 		
 		$file = array_filter($object->Files, array($this, 'matchFile'));
 		if(count($file) == 1) {

@@ -23,7 +23,8 @@
     			minOccurs="1">
     		</element>
     		<element name="BasePath"
-    			type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="0">
+    			type="chc:StringOrEnvironmentVariable" maxOccurs="1"
+    			minOccurs="0">
     		</element>
     		<element name="IncludePaths">
     			<complexType>
@@ -275,9 +276,29 @@
     		<extension base="chc:ProcessorType">
     			<sequence>
     				<element name="FolderId"
-    					type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="1">
+    					type="chc:StringOrEnvironmentVariable" maxOccurs="1"
+    					minOccurs="1">
     				</element>
-    				<element name="ObjectTypeId" type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="1"></element>
+    				<element name="ObjectTypeId"
+    					type="chc:StringOrEnvironmentVariable" maxOccurs="1"
+    					minOccurs="1">
+    				</element>
+    				<element name="PublishSettings">
+    					<complexType>
+    						<sequence>
+    							<element name="PublishAccesspoint"
+    								type="chc:StringOrEnvironmentVariable" maxOccurs="unbounded"
+    								minOccurs="0">
+    							</element>
+    							<element name="UnpublishAccesspoint"
+    								type="chc:StringOrEnvironmentVariable" maxOccurs="unbounded"
+    								minOccurs="0">
+    							</element>
+    						</sequence>
+    						<attribute name="UnpublishEverywhere"
+    							type="boolean">
+    						</attribute>
+    					</complexType></element>
     			</sequence>
     		</extension>
     	</complexContent>

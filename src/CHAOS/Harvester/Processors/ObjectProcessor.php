@@ -1,5 +1,7 @@
 <?php
 namespace CHAOS\Harvester\Processors;
+use CHAOS\Harvester\Shadows\ObjectShadow;
+
 abstract class ObjectProcessor extends Processor {
 	/**
 	 * The object type id of the objects that this object processor produces.
@@ -26,5 +28,75 @@ abstract class ObjectProcessor extends Processor {
 	 */
 	function setFolderId($folderId) {
 		$this->_folderId = $folderId;
+	}
+	
+	/**
+	 * If set, and an object is skipped, this is object is unpublished from any accesspoint it is published to.
+	 * @var boolean
+	 */
+	protected $_unpublishEverywhere;
+	
+	/**
+	 * If set, and an object is skipped, this is object is unpublished from any accesspoint it is published to.
+	 * @param boolean $unpublishEverywhere
+	 */
+	function setUnpublishEverywhere($unpublishEverywhere) {
+		$this->_unpublishEverywhere = $unpublishEverywhere;
+	}
+	
+	/**
+	 * If an object is skipped, this is object is unpublished from any accesspoint in the array.
+	 * @var string[]
+	 */
+	protected $_unpublishAccesspointGUIDs = array();
+	
+	/**
+	 * If an object is skipped, this is object is unpublished from any accesspoint in the array.
+	 * @param string[] $unpublishEverywhere
+	 */
+	function setUnpublishAccesspointGUIDs($unpublishAccesspointGUIDs) {
+		$this->_unpublishAccesspointGUIDs = $unpublishAccesspointGUIDs;
+	}
+	
+	/**
+	 * If an object is processed, this is object is published from any accesspoint in the array.
+	 * @var string[]
+	 */
+	protected $_publishAccesspointGUIDs = array();
+	
+	/**
+	 * If an object is processed, this is object is published from any accesspoint in the array.
+	 * @param string[] $publishAnywhere
+	 */
+	function setPublishAccesspointGUIDs($publishAccesspointGUIDs) {
+		$this->_publishAccesspointGUIDs = $publishAccesspointGUIDs;
+	}
+	
+	/**
+	 * Initializes a shadow with the information known by the processor, from the configuration.
+	 * This method reads the skipped filed of the object shadow, so set this before calling this method.
+	 * @param ObjectShadow $shadow The object shadow, that should be initalized
+	 * @return ObjectShadow The initialized shadow.
+	 */
+	function initializeShadow($shadow) {
+		if($shadow->skipped) {
+			if($this->_unpublishEverywhere === true) {
+				$this->_harvester->debug("This object will be unpublished from every accesspoint.");
+				$shadow->unpublishEverywhere = $this->_unpublishEverywhere;
+			} else {
+				foreach($this->_unpublishAccesspointGUIDs as $guid) {
+					$this->_harvester->debug("This object will be unpublished from accesspoint # $guid");
+					$shadow->unpublishAccesspointGUIDs[] = $guid;
+				}
+			}
+		} else {
+			foreach($this->_publishAccesspointGUIDs as $guid) {
+				$this->_harvester->debug("This object will be published to accesspoint # $guid");
+				$shadow->publishAccesspointGUIDs[] = $guid;
+			}
+		}
+		$shadow->objectTypeId = $this->_objectTypeId;
+		$shadow->folderId = $this->_folderId;
+		return $shadow;
 	}
 }

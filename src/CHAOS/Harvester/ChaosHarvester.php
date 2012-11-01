@@ -31,7 +31,7 @@ class ChaosHarvester {
 	/** @var Mode[string] */
 	protected $_modes;
 	
-	/** @var Processor[string] */
+	/** @var CHAOS\Harvester\Processors\Processor[string] */
 	protected $_processors;
 	
 	/** @var Filter[string] */
@@ -178,6 +178,19 @@ class ChaosHarvester {
 				
 				$folderId = $processor->xpath('chc:FolderId');
 				$this->_processors[$name]->setFolderId(intval(strval($folderId[0])));
+				
+				$publishSettings = $processor->xpath('chc:PublishSettings');
+				
+				$publishSettings = $publishSettings[0];
+				$this->_processors[$name]->setUnpublishEverywhere(strval($publishSettings->attributes()->UnpublishEverywhere) === 'true');
+				
+				$unpublishAccesspoints = $publishSettings->xpath('chc:UnpublishAccesspoint');
+				$unpublishAccesspoints = array_map(function($accesspoint) { return trim($accesspoint); }, $unpublishAccesspoints);
+				$this->_processors[$name]->setUnpublishAccesspointGUIDs($unpublishAccesspoints);
+				
+				$publishAccesspoints = $publishSettings->xpath('chc:PublishAccesspoint');
+				$publishAccesspoints = array_map(function($accesspoint) { return trim($accesspoint); }, $publishAccesspoints);
+				$this->_processors[$name]->setPublishAccesspointGUIDs($publishAccesspoints);
 			} elseif($type === 'MetadataProcessor') {
 				$validate = $processor->xpath('chc:validate');
 				$this->_processors[$name]->setValidate(strval($validate[0]) == 'true');
@@ -519,7 +532,7 @@ class ChaosHarvester {
 		} else {
 			$this->debug("Processing the external object with the '%s' processor.", $processorName);
 			$processor = $this->_processors[$processorName];
-			/* @var $processor Processor */
+			/* @var $processor \CHAOS\Harvester\Processors\Processor */
 			$filterResult = $processor->passesFilters($externalObject);
 			if($filterResult === true) {
 				return $processor->process($externalObject, $shadow);

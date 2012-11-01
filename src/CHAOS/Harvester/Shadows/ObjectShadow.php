@@ -39,6 +39,24 @@ class ObjectShadow extends Shadow {
 	public $extras = array();
 	
 	/**
+	 * An array of accesspoint GUIDs on which to publish the object if it should not be skipped.
+	 * @var string[]
+	 */
+	public $publishAccesspointGUIDs = array();
+	
+	/**
+	 * An array of accesspoint GUIDs on which to unpublish objects if it should be skipped.
+	 * @var string[]
+	 */
+	public $unpublishAccesspointGUIDs = array();
+	
+	/**
+	 * If the object is skipped, it is unpublished from any accesspoint.
+	 * @var boolean
+	 */
+	public $unpublishEverywhere;
+	
+	/**
 	 * The chaos object from the service.
 	 * @var \stdClass Chaos object.
 	 */
@@ -52,11 +70,8 @@ class ObjectShadow extends Shadow {
 		
 		// Get or create the object, while saving it to the object itself.
 		if($this->skipped) {
+			// Get the chaos object, but do not create it if its not there.
 			$this->get($harvester, false);
-			if($this->object != null) {
-				// TODO: Implement that this should be unpublished.
-				$harvester->debug("Object with GUID={$this->object->GUID} should be unpublished.");
-			}
 		} else {
 			$this->get($harvester);
 		
@@ -82,6 +97,38 @@ class ObjectShadow extends Shadow {
 				$relatedObjectShadow->commit($harvester, $this);
 			}
 		}
+		
+		$start = new \DateTime();
+		// Publish this as of yesterday - servertime issues.
+		$aDayInterval = new \DateInterval("P1D");
+		$start->sub($aDayInterval);
+		
+		foreach($this->publishAccesspointGUIDs as $accesspointGUID) {
+			$harvester->info(sprintf("Publishing to accesspoint = %s with startDate = %s", $accesspointGUID, $start->format("Y-m-d H:i:s")));
+			$response = $harvester->getChaosClient()->Object()->SetPublishSettings($this->object->GUID, $accesspointGUID, $start);
+			if(!$response->WasSuccess()) {
+				throw new RuntimeException("Couldn't set publish settings: {$response->Error()->Message()}");
+			}
+			if(!$response->MCM()->WasSuccess()) {
+				throw new RuntimeException("Couldn't set publish settings: (MCM) {$response->MCM()->Error()->Message()}");
+			}
+		}
+		
+		if($this->unpublishEverywhere) {
+			throw new RuntimeException("Unpublish everywhere is not supported at this moment, as the CHAOS service does not support listing the accesspoints to which the object is published.");
+		} else {
+			foreach($this->unpublishAccesspointGUIDs as $accesspointGUID) {
+				$harvester->info(sprintf("Unpublishing from accesspoint = %s", $accesspointGUID));
+				$response = $harvester->getChaosClient()->Object()->SetPublishSettings($this->object->GUID, $accesspointGUID);
+				if(!$response->WasSuccess()) {
+					throw new RuntimeException("Couldn't set publish settings: {$response->Error()->Message()}");
+				}
+				if(!$response->MCM()->WasSuccess()) {
+					throw new RuntimeException("Couldn't set publish settings: (MCM) {$response->MCM()->Error()->Message()}");
+				}
+			}
+		}
+		
 		// This is sat by the call to get.
 		return $this->object;
 	}
@@ -99,7 +146,7 @@ class ObjectShadow extends Shadow {
 		
 		// TODO: Consider sorting by DateCreated.
 		$harvester->debug("Trying to get the CHAOS object from ".$this->query);
-		$response = $chaos->Object()->Get($this->query, 'DateCreated+desc', null, 0, 1, true, true, true);
+		$response = $chaos->Object()->Get($this->query, 'DateCreated+desc', null, 0, 1, true, true, true, true);
 		if(!$response->WasSuccess()) {
 			throw new RuntimeException("General error when getting the object from the chaos service: " . $response->Error()->Message());
 		} elseif(!$response->MCM()->WasSuccess()) {
