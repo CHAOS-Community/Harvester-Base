@@ -534,12 +534,26 @@ class ChaosHarvester {
 			$e = 1;
 			foreach($this->processingExceptions as $exception) {
 				$traceString = implode("\n\t", explode("\n", $exception['exception']->getTraceAsString()));
-				$this->info("[$e/$total] Error '%s' when processing %s with the '%s' processor.\n\t%s", $exception['exception']->getMessage(), strval($exception['externalObject']), $exception['processorName'], $traceString);
+				if($exception['processorName'] !== null) {
+					$this->info("[$e/$total] Error '%s' when processing %s with the '%s' processor.\n\t%s", $exception['exception']->getMessage(), strval($exception['externalObject']), $exception['processorName'], $traceString);
+				} else {
+					$this->info("[$e/$total] Error '%s' when processing %s.\n\t%s", $exception['exception']->getMessage(), strval($exception['externalObject']), $traceString);
+				}
 				$e++;
 			}
 		} else {
 			$this->info("No exceptions was thrown while processing.");
 		}
+	}
+	
+	public function registerProcessingException($exception, $externalObject, $shadow, $processorName = null) {
+		trigger_error(sprintf("%s\n%s", $exception->getMessage(), $exception->getTraceAsString()), E_USER_WARNING);
+		$this->processingExceptions[] = array(
+				"exception" => $exception,
+				"externalObject" => $externalObject,
+				"shadow" => $shadow,
+				"processorName" => $processorName
+		);
 	}
 	
 	/**
@@ -573,13 +587,7 @@ class ChaosHarvester {
 					return $processor->skip($externalObject, $shadow);
 				}
 			} catch(Exception $exception) {
-				trigger_error(sprintf("%s\n%s", $exception->getMessage(), $exception->getTraceAsString()), E_USER_WARNING);
-				$this->processingExceptions[] = array(
-						"exception" => $exception,
-						"processorName" => $processorName,
-						"externalObject" => $externalObject,
-						"shadow" => $shadow
-				);
+				$this->registerProcessingException($exception, $externalObject, $shadow, $processorName);
 				// Do nothing then ...
 				return $shadow;
 			}
