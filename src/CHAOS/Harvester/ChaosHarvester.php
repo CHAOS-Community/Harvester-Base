@@ -7,7 +7,7 @@ use CHAOS\Harvester\Filters\EmbeddedFilter;
 
 use CHAOS\Portal\Client\PortalClient;
 
-use \RuntimeException, \SimpleXMLElement, \DOMDocument;
+use \RuntimeException, \Exception, \SimpleXMLElement, \DOMDocument;
 
 class ChaosHarvester {
 	
@@ -514,9 +514,32 @@ class ChaosHarvester {
 			throw new RuntimeException("Mode '$mode' is not supported, please choose from: ".implode(', ', array_keys($this->_modes)));
 		}
 		
+		$this->printProcessingExceptions();
+		
 		echo "\n";
 		echo "All done - ";
 		timed_print();
+	}
+	
+	/**
+	 * An array describing the processing exceptions thrown during any processing.
+	 * @var array[]
+	 */
+	protected $processingExceptions = array();
+	
+	public function printProcessingExceptions() {
+		$total = count($this->processingExceptions);
+		if($total > 0) {
+			$this->info("Printing a summary of %u exceptions, thrown while processing:", $total);	
+			$e = 1;
+			foreach($this->processingExceptions as $exception) {
+				$traceString = implode("\n\t", explode("\n", $exception['exception']->getTraceAsString()));
+				$this->info("[$e/$total] Error '%s' when processing %s with the '%s' processor.\n\t%s", $exception['exception']->getMessage(), strval($exception['externalObject']), $exception['processorName'], $traceString);
+				$e++;
+			}
+		} else {
+			$this->info("No exceptions was thrown while processing.");
+		}
 	}
 	
 	/**
@@ -536,17 +559,29 @@ class ChaosHarvester {
 			$processor = $this->_processors[$processorName];
 			/* @var $processor \CHAOS\Harvester\Processors\Processor */
 			$filterResult = $processor->passesFilters($externalObject);
-			if($filterResult === true) {
-				return $processor->process($externalObject, $shadow);
-			} elseif(is_array($filterResult)) {
-				foreach($filterResult as $rejection) {
-					if($rejection['reason'] === false || strlen($rejection['reason']) == 0) {
-						$this->info("Skipped because the external object didn't pass the %s filter without a reason.", $rejection['name']);
-					} else {
-						$this->info("Skipped because the external object didn't pass the %s filter, because: %s", $rejection['name'], $rejection['reason']);
+			try {
+				if($filterResult === true) {
+					return $processor->process($externalObject, $shadow);
+				} elseif(is_array($filterResult)) {
+					foreach($filterResult as $rejection) {
+						if($rejection['reason'] === false || strlen($rejection['reason']) == 0) {
+							$this->info("Skipped because the external object didn't pass the %s filter without a reason.", $rejection['name']);
+						} else {
+							$this->info("Skipped because the external object didn't pass the %s filter, because: %s", $rejection['name'], $rejection['reason']);
+						}
 					}
+					return $processor->skip($externalObject, $shadow);
 				}
-				return $processor->skip($externalObject, $shadow);
+			} catch(Exception $exception) {
+				trigger_error(sprintf("%s\n%s", $exception->getMessage(), $exception->getTraceAsString()), E_USER_WARNING);
+				$this->processingExceptions[] = array(
+						"exception" => $exception,
+						"processorName" => $processorName,
+						"externalObject" => $externalObject,
+						"shadow" => $shadow
+				);
+				// Do nothing then ...
+				return $shadow;
 			}
 		}
 	}

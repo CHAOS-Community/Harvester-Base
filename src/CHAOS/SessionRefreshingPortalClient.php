@@ -30,7 +30,9 @@ class SessionRefreshingPortalClient extends PortalClient {
 				printf("Failed!\n");
 			}
 		}
+		timed();
 		$response = parent::CallService($path, $method, $parameters, $requiresSession);
+		timed('chaos');
 		return $response;
 	}
 }

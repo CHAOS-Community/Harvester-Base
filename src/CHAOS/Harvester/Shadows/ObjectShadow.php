@@ -114,19 +114,24 @@ class ObjectShadow extends Shadow {
 			}
 		}
 		
-		if($this->unpublishEverywhere) {
-			throw new RuntimeException("Unpublish everywhere is not supported at this moment, as the CHAOS service does not support listing the accesspoints to which the object is published.");
-		} else {
-			foreach($this->unpublishAccesspointGUIDs as $accesspointGUID) {
-				$harvester->info(sprintf("Unpublishing from accesspoint = %s", $accesspointGUID));
-				$response = $harvester->getChaosClient()->Object()->SetPublishSettings($this->object->GUID, $accesspointGUID);
-				if(!$response->WasSuccess()) {
-					throw new RuntimeException("Couldn't set publish settings: {$response->Error()->Message()}");
-				}
-				if(!$response->MCM()->WasSuccess()) {
-					throw new RuntimeException("Couldn't set publish settings: (MCM) {$response->MCM()->Error()->Message()}");
+		// Only do this if an object was returned from the query.
+		if($this->object !== null) {
+			if($this->unpublishEverywhere) {
+				throw new RuntimeException("Unpublish everywhere is not supported at this moment, as the CHAOS service does not support listing the accesspoints to which the object is published.");
+			} else {
+				foreach($this->unpublishAccesspointGUIDs as $accesspointGUID) {
+					$harvester->info(sprintf("Unpublishing from accesspoint = %s", $accesspointGUID));
+					$response = $harvester->getChaosClient()->Object()->SetPublishSettings($this->object->GUID, $accesspointGUID);
+					if(!$response->WasSuccess()) {
+						throw new RuntimeException("Couldn't set publish settings: {$response->Error()->Message()}");
+					}
+					if(!$response->MCM()->WasSuccess()) {
+						throw new RuntimeException("Couldn't set publish settings: (MCM) {$response->MCM()->Error()->Message()}");
+					}
 				}
 			}
+		} else {
+			$harvester->info("No need to unpublish as this external object is not represented in CHAOS.");
 		}
 		
 		// This is sat by the call to get.
