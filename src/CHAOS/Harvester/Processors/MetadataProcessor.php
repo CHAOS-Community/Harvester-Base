@@ -66,14 +66,20 @@ abstract class MetadataProcessor extends Processor {
 		if($metadata->xml == null) {
 			throw new Exception("An error occured when generating the metadata, check your implementation.");
 		}
-		if($this->_validate === true) {
+		
+		if($this->_validate === true || $this->_harvester->hasOption('print-metadata')) {
 			timed();
 			$dom = dom_import_simplexml($metadata->xml)->ownerDocument;
 			$dom->formatOutput = true;
-			if($dom->schemaValidateSource($this->_schemaSource) === false) {
-				throw new RuntimeException("The generated metadata didn't match the schema.");
+			if($this->_harvester->hasOption('print-metadata')) {
+				echo $dom->saveXML();
 			}
-			timed('validating-metadata');
+			if($this->_validate === true) {
+				if($dom->schemaValidateSource($this->_schemaSource) === false) {
+					throw new RuntimeException("The generated metadata didn't match the schema.");
+				}
+				timed('validating-metadata');
+			}
 		}
 		$shadow->metadataShadows[] = $metadata;
 		return $shadow;

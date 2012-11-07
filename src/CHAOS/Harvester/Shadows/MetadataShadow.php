@@ -30,6 +30,7 @@ class MetadataShadow extends Shadow {
 		}
 		
 		$xmlString = $this->xml->saveXML();
+		
 		$response = $harvester->getChaosClient()->Metadata()->Set($object->GUID, $this->metadataSchemaGUID, $this->languageCode, $revisionID, $xmlString);
 		if(!$response->WasSuccess()) {
 			throw new RuntimeException('General error setting metadata for schema GUID = '.$this->metadataSchemaGUID . ': '.$response->Error()->Message());
