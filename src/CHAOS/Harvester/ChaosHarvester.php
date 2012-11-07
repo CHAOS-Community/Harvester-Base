@@ -1,5 +1,7 @@
 <?php
 namespace CHAOS\Harvester;
+use CHAOS\SessionRefreshingPortalClient;
+
 use CHAOS\Harvester\Shadows\Shadow;
 use CHAOS\Harvester\Filters\EmbeddedFilter;
 
@@ -19,7 +21,7 @@ class ChaosHarvester {
 	//const CHC_NAMESPACE = 'http://www.example.org/ChaosHarvesterConfiguration';
 	const CHC_SCHEMA_ENVVAR = 'CHC_SCHEMA';
 	
-	/** @var \CHAOS\Portal\Client\PortalClient */
+	/** @var SessionRefreshingPortalClient */
 	protected $_chaos;
 	
 	/** @var array[string]string */
@@ -134,7 +136,7 @@ class ChaosHarvester {
 			$this->_chaosParameters['ClientGUID'] = self::generateGUID();
 		}
 		timed();
-		$this->_chaos = new \CHAOS\Portal\Client\PortalClient($this->_chaosParameters['URL'], $this->_chaosParameters['ClientGUID']);
+		$this->_chaos = new SessionRefreshingPortalClient($this->_chaosParameters['URL'], $this->_chaosParameters['ClientGUID']);
 		timed('chaos');
 		$this->authenticateChaosSession();
 		
