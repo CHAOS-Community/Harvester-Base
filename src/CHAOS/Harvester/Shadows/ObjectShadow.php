@@ -189,4 +189,18 @@ class ObjectShadow extends Shadow {
 		$this->object = $object;
 		return $this->object;
 	}
+	
+	/**
+	 * Generates a string representation of the object shadow.
+	 * @return string A string representation of the object shadow.
+	 */
+	public function __toString() {
+		if($this->object != null && strlen($this->object->GUID) > 0) {
+			return strval($this->object->GUID);
+		} elseif(strlen($this->query) > 0) {
+			return "[chaos object found from {$this->query}]";
+		} else {
+			return '';
+		}
+	}
 }

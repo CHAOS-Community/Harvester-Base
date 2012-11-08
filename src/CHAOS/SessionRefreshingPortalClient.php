@@ -11,7 +11,7 @@ class SessionRefreshingPortalClient extends PortalClient {
 	 * How long time is a CHAOS session timeout?
 	 * @var string Will be appended a '-' and used as argument for a call to the strtotime function.
 	 */
-	const SESSION_TIMEOUT = '19 minutes';
+	const SESSION_TIMEOUT = '18 minutes';
 	
 	public function CallService($path, $method, array $parameters = null, $requiresSession = true) {
 		$timeoutTime = strtotime('-'.self::SESSION_TIMEOUT);

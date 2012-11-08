@@ -534,10 +534,17 @@ class ChaosHarvester {
 			$e = 1;
 			foreach($this->processingExceptions as $exception) {
 				$traceString = implode("\n\t", explode("\n", $exception['exception']->getTraceAsString()));
-				if($exception['processorName'] !== null) {
-					$this->info("[$e/$total] Error '%s' when processing %s with the '%s' processor.\n\t%s", $exception['exception']->getMessage(), strval($exception['externalObject']), $exception['processorName'], $traceString);
+				if(strlen($exception['externalObject']) > 0) {
+					$title = strval($exception['externalObject']);
+				} elseif(strlen($exception['shadow']) > 0) {
+					$title = strval($exception['shadow']);
 				} else {
-					$this->info("[$e/$total] Error '%s' when processing %s.\n\t%s", $exception['exception']->getMessage(), strval($exception['externalObject']), $traceString);
+					$title = "[some unnamed object]";
+				}
+				if($exception['processorName'] !== null) {
+					$this->info("[$e/$total] Error '%s' when processing %s with the '%s' processor.\n\t%s", $exception['exception']->getMessage(), $title, $exception['processorName'], $traceString);
+				} else {
+					$this->info("[$e/$total] Error '%s' when processing %s.\n\t%s", $exception['exception']->getMessage(), $title, $traceString);
 				}
 				$e++;
 			}
