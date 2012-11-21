@@ -62,6 +62,9 @@ class XSLTMetadataProcessor extends MetadataProcessor {
 			}
 		}
 		$result = $this->_processor->transformToDoc($dom);
+		if($result == null) {
+			throw new RuntimeException("Failed to transform the external object using the XSLT processor.");
+		}
 		return simplexml_import_dom($result);
 	}
 	
