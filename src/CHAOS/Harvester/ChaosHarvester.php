@@ -501,7 +501,7 @@ class ChaosHarvester {
 			self::info("Starting harvester in '%s' mode.", $mode);
 			if($this->_modes[$mode] instanceof Modes\AllMode) {
 				$this->_modes[$mode]->execute();
-			} else if($this->_modes[$mode] instanceof Modes\SingleByReferenceMode) {
+			} else if($this->_modes[$mode] instanceof Modes\SingleByReferenceMode || $this->_modes[$mode] instanceof Modes\SetByReferenceMode) {
 				if(!key_exists('reference', $this->_options)) {
 					trigger_error('You have to specify a --reference={reference} in the '.$mode.' mode.', E_USER_ERROR);
 				}
