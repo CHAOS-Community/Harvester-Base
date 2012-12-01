@@ -135,9 +135,10 @@ class ChaosHarvester {
 		if(!key_exists('ClientGUID', $this->_chaosParameters) || strlen($this->_chaosParameters['ClientGUID']) == 0) {
 			$this->_chaosParameters['ClientGUID'] = self::generateGUID();
 		}
-		timed();
-		$this->_chaos = new SessionRefreshingPortalClient($this->_chaosParameters['URL'], $this->_chaosParameters['ClientGUID']);
-		timed('chaos');
+		$servicePath = $this->_chaosParameters['URL'];
+		$this->info("Using CHAOS service: %s", $servicePath);
+		$this->_chaos = new SessionRefreshingPortalClient($servicePath, $this->_chaosParameters['ClientGUID']);
+		
 		$this->authenticateChaosSession();
 		
 		// Parsing modes.
@@ -472,9 +473,7 @@ class ChaosHarvester {
 	 */
 	public function authenticateChaosSession() {
 		self::info("Authenticating the session using email %s.", $this->_chaosParameters['Email']);
-		timed();
 		$result = $this->_chaos->EmailPassword()->Login($this->_chaosParameters['Email'], $this->_chaosParameters['Password']);
-		timed('chaos');
 		if(!$result->WasSuccess()) {
 			throw new \RuntimeException("Couldn't authenticate the session, error in request: ".$result->Error()->Message());
 		} elseif(!$result->EmailPassword()->WasSuccess()) {
