@@ -53,7 +53,9 @@ class XSLTMetadataProcessor extends MetadataProcessor {
 			throw new RuntimeException("Cannot generate XMSL metadata from an external object of type ".get_class($externalObject));
 		}
 		
+		// This makes PHP functions reachable from the XSLT stylesheet.
 		$this->_processor->registerPHPFunctions();
+		
 		if(is_array($shadow->extras)) {
 			foreach($shadow->extras as $key => $value) {
 				if(is_string($value) || is_numeric($value)) {
@@ -61,11 +63,75 @@ class XSLTMetadataProcessor extends MetadataProcessor {
 				}
 			}
 		}
-		$result = $this->_processor->transformToDoc($dom);
+		
+		// We use transformToXml here.
+		$result = $this->_processor->transformToXml($dom);
 		if($result == null) {
 			throw new RuntimeException("Failed to transform the external object using the XSLT processor.");
 		}
-		return simplexml_import_dom($result);
+		return simplexml_load_string($result);
+	}
+
+	public static function xslt_split($pieces, $glue = ',') {
+		$d = new DomDocument('1.0');
+		$pieces = explode($glue, $pieces);
+		foreach($pieces as $p){
+			$p = trim($p);
+			if($p === '') continue;
+			$n = $d->createElement('element', $p);
+			$d->appendChild($n);
+		}
+		return $d;
+	}
+	
+	/**
+	 * Creates an element from a document.
+	 * @param \DOMDocument $d
+	 * @param string $tagName
+	 * @param string $value
+	 * @param string $ns
+	 * @return \DOMElement
+	 */
+	protected static function createElement($d, $tagName, $value = null, $ns = null) {
+		if($ns != null && strlen($ns) > 0) {
+			return $d->createElementNS($ns, $tagName, $value);
+		} else {
+			return $d->createElement($tagName, $value);
+		}
+	}
+	
+	function preg_explode_to_xml($s, $pattern, $rootTagName = "root", $matchTagName = "match", $ns = "", $valuesAsAttributes = false) {
+		$d = new \DOMDocument('1.0');
+		$root = self::createElement($d, $rootTagName, null, $ns);
+		
+		$matches = preg_match_all($pattern, $s, $result);
+		$groupNames = array();
+		
+		foreach(array_keys($result) as $groupName) {
+			if(is_string($groupName)) {
+				$groupNames[] = $groupName;
+			}
+		}
+		
+		for($m = 0; $m < $matches; $m++) {
+			$match = self::createElement($d, $matchTagName, null, $ns);
+			foreach(array_keys($result) as $groupName) {
+				if(is_string($groupName)) {
+					$value = $result[$groupName][$m];
+					if($valuesAsAttributes == true) {
+						$match->setAttribute($groupName, $value);
+					} else {
+						$group = self::createElement($d, $groupName, $value, $ns);
+						$match->appendChild($group);
+					}
+				}
+			}
+			$root->appendChild($match);
+		}
+		
+		$d->appendChild($root);
+		$d->formatOutput = true;
+		return $d;
 	}
 	
 }
