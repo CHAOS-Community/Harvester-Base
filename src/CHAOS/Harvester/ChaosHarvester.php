@@ -151,7 +151,16 @@ class ChaosHarvester {
 			$type = strval($attributes->type);
 			$namespace = strval($attributes->namespace);
 			$className = strval($attributes->className);
-			$this->loadMode($name, $type, $namespace, $className);
+			
+			$parameters = $mode->xpath("chc:Parameter");
+			$params = array();
+			foreach($parameters as $parameter) {
+				/* @var $p SimpleXMLElement */
+				$parameterAttributes = $parameter->attributes();
+				$params[strval($parameterAttributes->name)] = strval($parameter);
+			}
+			
+			$this->loadMode($name, $type, $namespace, $className, $params);
 		}
 		
 		// Parsing processors
@@ -434,9 +443,9 @@ class ChaosHarvester {
 	 * @param string $className
 	 * @return Mode|null The mode or null if the mode could not be loaded.
 	 */
-	protected function loadMode($name, $type, $namespace, $className) {
+	protected function loadMode($name, $type, $namespace, $className, $parameters = null) {
 		$modeInterface = sprintf('CHAOS\Harvester\Modes\%sMode', $type);
-		$mode = $this->loadClass($name, $namespace, $className, array($modeInterface));
+		$mode = $this->loadClass($name, $namespace, $className, array($modeInterface), array(), $parameters);
 		if(key_exists($name, $this->_modes)) {
 			throw new RuntimeException("A mode by the name of '$name' is already loaded.");
 		} else {

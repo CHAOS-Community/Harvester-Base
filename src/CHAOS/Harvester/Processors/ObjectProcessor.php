@@ -3,6 +3,7 @@ namespace CHAOS\Harvester\Processors;
 use CHAOS\Harvester\Shadows\ObjectShadow;
 
 abstract class ObjectProcessor extends Processor {
+	
 	/**
 	 * The object type id of the objects that this object processor produces.
 	 * @var integer The object type ID to use when creating object shadows.

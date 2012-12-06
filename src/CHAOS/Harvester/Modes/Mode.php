@@ -7,5 +7,11 @@ abstract class Mode implements \CHAOS\Harvester\Loadable {
 	 * @var \CHAOS\Harvester\ChaosHarvester
 	 */
 	protected $_harvester;
+	protected $_name;
+	
+	public function __construct($harvester, $name, $parameters) {
+		$this->_harvester = $harvester;
+		$this->_name = $name;
+	}
 	
 }

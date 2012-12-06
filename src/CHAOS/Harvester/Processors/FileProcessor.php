@@ -10,18 +10,6 @@ use \RuntimeException;
 abstract class FileProcessor extends Processor implements \CHAOS\Harvester\Loadable {
 	
 	/**
-	 * Constructs a file processor.
-	 * @param \CHAOS\Harvester\ChaosHarvester $harvester a reference to the harvester which is going to ask this processor.
-	 * @param string $name The name of this processor, from the configuration.
-	 * @param string[string] $parameters An array of key => value parameters, from the configuration. 
-	 */
-	public function __construct($harvester, $name, $parameters = null) {
-		$this->_harvester = $harvester;
-		$this->setParameters($parameters);
-		$this->_harvester->debug("A ".__CLASS__." named '$name' was constructing.");
-	}
-	
-	/**
 	 * The ID of the format to use when creating files.
 	 * @var int
 	 */
