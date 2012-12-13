@@ -9,6 +9,7 @@ use \Exception;
 abstract class MetadataProcessor extends Processor {
 	
 	protected $_schemaSource;
+	protected $_schemaLocation;
 	protected $_schemaGUID;
 	
 	public function fetchSchema($schemaGUID, $schemaLocation = null) {
@@ -33,17 +34,14 @@ abstract class MetadataProcessor extends Processor {
 			}
 			$schemas = $response->MCM()->Results();
 			$this->_schemaSource = $schemas[0]->SchemaXML;
+			$this->_schemaLocation = null;
 		} else {
-			if(strstr($schemaLocation, 'http://') === 0 || strstr($schemaLocation, 'https://') === 0) {
-				$this->_schemaSource = file_get_contents($schemaLocation);
-			} else {
+			if(strstr($schemaLocation, 'http://') !== 0 && strstr($schemaLocation, 'https://') !== 0) {
+				// This is probably a local file.
 				$schemaLocation = $this->_harvester->resolvePath($schemaLocation);
-				if($schemaLocation == null) {
-					throw new RuntimeException("Schema ($schemaLocation) is unreadable.");
-				} else {
-					$this->_schemaSource = file_get_contents($schemaLocation);
-				}
 			}
+			$this->_schemaSource = null;
+			$this->_schemaLocation = $schemaLocation;
 		}
 	}
 	
@@ -75,8 +73,12 @@ abstract class MetadataProcessor extends Processor {
 				echo $dom->saveXML();
 			}
 			if($this->_validate === true) {
-				if($dom->schemaValidateSource($this->_schemaSource) === false) {
+				if($this->_schemaSource != null && $dom->schemaValidateSource($this->_schemaSource) === false) {
 					throw new RuntimeException("The generated metadata didn't match the schema.");
+				} elseif($this->_schemaLocation != null && $dom->schemaValidate($this->_schemaLocation) === false) {
+					throw new RuntimeException("The generated metadata didn't match the schema.");
+				} elseif($this->_schemaSource == null && $this->_schemaLocation == null) {
+					throw new RuntimeException("I was asked to validate the metadata against a schema which was not defined.");
 				}
 				timed('validating-metadata');
 			}

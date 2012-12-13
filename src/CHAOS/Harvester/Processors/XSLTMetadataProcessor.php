@@ -11,6 +11,7 @@ use \SimpleXMLElement;
 class XSLTMetadataProcessor extends MetadataProcessor {
 	
 	protected $_processor;
+	protected $_localStylesheetDirectory;
 	
 	public function __construct($harvester, $name, $parameters = array()) {
 		$this->_harvester = $harvester;
@@ -23,6 +24,11 @@ class XSLTMetadataProcessor extends MetadataProcessor {
 			$stylesheet = $this->_harvester->resolvePath($stylesheet);
 			if($stylesheet == null) {
 				throw new RuntimeException('The "stylesheet" parameter ('.$parameters['stylesheet'].') of a XSLTMetadataProcessor is not readable.');
+			} else {
+				$this->_localStylesheetDirectory = realpath($stylesheet);
+				$this->_localStylesheetDirectory = pathinfo($this->_localStylesheetDirectory);
+				$this->_localStylesheetDirectory = $this->_localStylesheetDirectory['dirname'];
+				//chdir('cvs');
 			}
 		}
 		
