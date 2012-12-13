@@ -137,7 +137,7 @@ class ChaosHarvester {
 		}
 		$servicePath = $this->_chaosParameters['URL'];
 		$this->info("Using CHAOS service: %s", $servicePath);
-		$this->_chaos = new SessionRefreshingPortalClient($servicePath, $this->_chaosParameters['ClientGUID']);
+		$this->_chaos = new SessionRefreshingPortalClient($this, $servicePath, $this->_chaosParameters['ClientGUID']);
 		
 		$this->authenticateChaosSession();
 		
@@ -499,6 +499,10 @@ class ChaosHarvester {
 		return $this->_chaos;
 	}
 	
+	/**
+	 * Starts the harvester in a selected mode, this mode has to match a name in the given configuration file.
+	 * @param string $mode The name of the mode to start the harvester in.
+	 */
 	public function start($mode = null) {
 		// Load from options if not sat as an argument for the function.
 		if($mode == null && key_exists('mode', $this->_options)) {
@@ -508,13 +512,19 @@ class ChaosHarvester {
 		if(key_exists($mode, $this->_modes)) {
 			self::info("Starting harvester in '%s' mode.", $mode);
 			if($this->_modes[$mode] instanceof Modes\AllMode) {
+				
+				// Execute the mode!
 				$this->_modes[$mode]->execute();
+				
 			} else if($this->_modes[$mode] instanceof Modes\SingleByReferenceMode || $this->_modes[$mode] instanceof Modes\SetByReferenceMode) {
 				if(!key_exists('reference', $this->_options)) {
 					trigger_error('You have to specify a --reference={reference} in the '.$mode.' mode.', E_USER_ERROR);
 				}
+				
+				// Execute the mode!
 				$reference = $this->_options['reference'];
 				$this->_modes[$mode]->execute($reference);
+				
 			} else {
 				throw new RuntimeException("Mode type is not supported.");
 			}

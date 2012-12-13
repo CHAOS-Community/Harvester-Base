@@ -5,6 +5,17 @@ use CHAOS\Portal\Client\PortalClient;
 
 class SessionRefreshingPortalClient extends PortalClient {
 	
+	/**
+	 * The harvester creating this portal client.
+	 * @var CHAOS\Harvester\ChaosHarvester
+	 */
+	protected $_harvester;
+	
+	public function __construct($harvester, $servicePath, $clientGUID, $autoCreateSession = true) {
+		$this->_harvester = $harvester;
+		parent::__construct($servicePath, $clientGUID, $autoCreateSession);
+	}
+	
 	private $lastSessionRefresh;
 	
 	/**
@@ -29,6 +40,9 @@ class SessionRefreshingPortalClient extends PortalClient {
 			} else {
 				printf("Failed!\n");
 			}
+		}
+		if($this->_harvester->hasOption('debug-chaos')) {
+			$this->_harvester->debug("CHAOS called %s with method %s and parameters: %s", $path, $method, print_r($parameters, true));
 		}
 		timed();
 		$response = parent::CallService($path, $method, $parameters, $requiresSession);
