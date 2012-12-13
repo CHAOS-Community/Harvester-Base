@@ -67,11 +67,11 @@ abstract class MetadataProcessor extends Processor {
 			throw new Exception("An error occured when generating the metadata, check your implementation.");
 		}
 		
-		if($this->_validate === true || $this->_harvester->hasOption('print-metadata')) {
+		if($this->_validate === true || $this->_harvester->hasOption('debug-metadata')) {
 			timed();
 			$dom = dom_import_simplexml($metadata->xml)->ownerDocument;
 			$dom->formatOutput = true;
-			if($this->_harvester->hasOption('print-metadata')) {
+			if($this->_harvester->hasOption('debug-metadata')) {
 				echo $dom->saveXML();
 			}
 			if($this->_validate === true) {
