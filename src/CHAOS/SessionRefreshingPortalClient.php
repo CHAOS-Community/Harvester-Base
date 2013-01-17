@@ -41,7 +41,7 @@ class SessionRefreshingPortalClient extends PortalClient {
 				printf("Failed!\n");
 			}
 		}
-		if($this->_harvester->hasOption('debug-chaos')) {
+		if($this->_harvester != null && $this->_harvester->hasOption('debug-chaos')) {
 			$this->_harvester->debug("CHAOS called %s with method %s and parameters: %s", $path, $method, print_r($parameters, true));
 		}
 		timed();
