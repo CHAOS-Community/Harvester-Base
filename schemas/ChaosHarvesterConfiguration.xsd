@@ -145,7 +145,7 @@
     					type="chc:ParameterType" maxOccurs="unbounded" minOccurs="0">
     				</element>
     			</sequence>
-    			<attribute name="name" type="string"></attribute>
+    			<attribute name="name" type="string" use="required"></attribute>
 
 
     		</extension>
@@ -237,7 +237,7 @@
     					</restriction>
     				</simpleType>
     			</attribute>
-    			<attribute name="name" type="string"></attribute>
+    			<attribute name="name" type="string" use="required"></attribute>
     		</extension>
     	</complexContent>
     </complexType>
