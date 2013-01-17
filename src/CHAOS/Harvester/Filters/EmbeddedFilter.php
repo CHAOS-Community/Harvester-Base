@@ -1,20 +1,9 @@
 <?php
 namespace CHAOS\Harvester\Filters;
-class EmbeddedFilter extends Filter implements \CHAOS\Harvester\Loadable {
-	
-	/**
-	 * Constructs a new embedded filter.
-	 * @param \CHAOS\Harvester\ChaosHarvester $harvester a reference to the harvester which is going to ask this filter.
-	 * @param string $name The name of the filter, from the configuration.
-	 * @param string[string] $parameters An array of key => value parameters, from the configuration. 
-	 */
-	public function __construct($harvester, $name, $parameters = array()) {
-		$this->_harvester = $harvester;
-		$this->_harvester->debug("A ".__CLASS__." named '$name' was constructing.");
-	}
+class EmbeddedFilter extends Filter {
 	
 	public function passes($externalObject) {
-		$this->_harvester->debug(__CLASS__." is processing.");
+		$this->_harvester->debug($this->_name." is processing.");
 		return call_user_func($this->_function, $externalObject);
 	}
 	
