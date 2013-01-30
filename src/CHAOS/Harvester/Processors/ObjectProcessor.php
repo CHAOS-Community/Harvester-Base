@@ -100,4 +100,14 @@ abstract class ObjectProcessor extends Processor {
 		$shadow->folderId = $this->_folderId;
 		return $shadow;
 	}
+	
+	function skip($externalObject, $shadow = null) {
+		$shadow = new SkippedObjectShadow();
+		$shadow = $this->initializeShadow($shadow);
+		$shadow->query = $this->generateQuery($externalObject);
+		
+		$shadow->commit($this->_harvester);
+		
+		return $shadow;
+	}
 }
