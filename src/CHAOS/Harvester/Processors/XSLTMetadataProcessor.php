@@ -71,9 +71,15 @@ class XSLTMetadataProcessor extends MetadataProcessor {
 		}
 		
 		// We use transformToXml here.
+		libxml_clear_errors();
 		$result = $this->_processor->transformToXml($dom);
 		if($result == null) {
-			throw new RuntimeException("Failed to transform the external object using the XSLT processor.");
+			$errors = libxml_get_errors();
+			if($errors) {
+				throw new RuntimeException("Failed to transform the external object using the XSLT processor: ". implode(" ", $errors));
+			} else {
+				throw new RuntimeException("Failed to transform the external object using the XSLT processor.");
+			}
 		}
 		return simplexml_load_string($result);
 	}
@@ -106,7 +112,8 @@ class XSLTMetadataProcessor extends MetadataProcessor {
 		}
 	}
 	
-	function preg_explode_to_xml($s, $pattern, $rootTagName = "root", $matchTagName = "match", $ns = "", $valuesAsAttributes = false) {
+		
+	function preg_explode_to_xml($s, $pattern, $rootTagName = "root", $matchTagName = "match", $ns = "", $valuesAsAttributes = false, $singleGroupAsNodeValue = false) {
 		$d = new \DOMDocument('1.0');
 		$root = self::createElement($d, $rootTagName, null, $ns);
 		
@@ -121,14 +128,19 @@ class XSLTMetadataProcessor extends MetadataProcessor {
 		
 		for($m = 0; $m < $matches; $m++) {
 			$match = self::createElement($d, $matchTagName, null, $ns);
-			foreach(array_keys($result) as $groupName) {
-				if(is_string($groupName)) {
-					$value = $result[$groupName][$m];
-					if($valuesAsAttributes == true) {
-						$match->setAttribute($groupName, $value);
-					} else {
-						$group = self::createElement($d, $groupName, $value, $ns);
-						$match->appendChild($group);
+			if($singleGroupAsNodeValue) {
+				$value = $result[1][$m];
+				$match->nodeValue = $value;
+			} else {
+				foreach(array_keys($result) as $groupName) {
+					if(is_string($groupName)) {
+						$value = $result[$groupName][$m];
+						if($valuesAsAttributes == true) {
+							$match->setAttribute($groupName, $value);
+						} else {
+							$group = self::createElement($d, $groupName, $value, $ns);
+							$match->appendChild($group);
+						}
 					}
 				}
 			}
