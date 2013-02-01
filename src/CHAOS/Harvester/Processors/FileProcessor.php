@@ -38,6 +38,7 @@ abstract class FileProcessor extends Processor implements \CHAOS\Harvester\Loada
 	}
 	
 	public function createFileShadowFromURL($url) {
+		$url = strval($url);
 		// Check if a destination exists that can be used for this file.
 		foreach($this->_destinations as $destination) {
 			$baseURL = $destination['baseURL'];
