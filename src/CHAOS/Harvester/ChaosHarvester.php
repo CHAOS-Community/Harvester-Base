@@ -220,8 +220,16 @@ class ChaosHarvester {
 				$formatId = $processor->xpath('chc:FormatId');
 				$this->_processors[$name]->setFormatId(intval(strval($formatId[0])));
 				
-				$destinationId = $processor->xpath('chc:DestinationId');
-				$this->_processors[$name]->setDestinationId(intval(strval($destinationId[0])));
+				$destinationElements = $processor->xpath('chc:Destination');
+				$destinations = array();
+				foreach($destinationElements as $destination) {
+					$destinations[] = array(
+						"name" => strval($destination->attributes()->name),
+						"id" => intval(array_pop($destination->xpath('chc:id'))),
+						"baseURL" => strval(array_pop($destination->xpath('chc:baseURL')))
+					);
+				}
+				$this->_processors[$name]->setDestinations($destinations);
 			}
 			
 			// Parsing filters

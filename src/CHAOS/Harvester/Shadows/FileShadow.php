@@ -26,6 +26,14 @@ class FileShadow extends Shadow {
 		return $file;
 	}
 	
+	public function getFileID() {
+		if($this->file && $this->file->ID) {
+			return $this->file->ID;
+		} else {
+			return null;
+		}
+	}
+	
 	public function commit($harvester, $parent = null) {
 		if($this->file != null) {
 			$harvester->debug("Asked to commit a shadow of a file that has already been committed.");

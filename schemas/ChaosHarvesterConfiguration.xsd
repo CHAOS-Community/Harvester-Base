@@ -314,9 +314,23 @@
     		<extension base="chc:ProcessorType">
     			<sequence>
     				<element name="FormatId"
-    					type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="1">
+    					type="chc:StringOrEnvironmentVariable" maxOccurs="1"
+    					minOccurs="1">
     				</element>
-    				<element name="DestinationId" type="chc:StringOrEnvironmentVariable" maxOccurs="1" minOccurs="1"></element>
+    				<element name="Destination" maxOccurs="unbounded" minOccurs="1">
+    					<complexType>
+    						<sequence>
+    							<element name="baseURL"
+    								type="chc:StringOrEnvironmentVariable">
+    							</element>
+    							<element name="id" type="integer">
+    							</element>
+    						</sequence>
+    						<attribute name="name"
+    							type="string">
+    						</attribute>
+    					</complexType>
+    				</element>
     			</sequence>
     		</extension>
     	</complexContent>
