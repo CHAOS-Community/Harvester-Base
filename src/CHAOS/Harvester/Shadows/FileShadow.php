@@ -73,10 +73,10 @@ class FileShadow extends Shadow {
 			
 			$response = $harvester->getChaosClient()->File()->Create($object->GUID, $this->parentFileID, $this->formatID, $this->destinationID, $this->filename, $this->originalFilename, $this->folderPath);
 			if(!$response->WasSuccess()) {
-				throw new RuntimeException('General error setting metadata for schema GUID = '.$this->metadataSchemaGUID . ': '.$response->Error()->Message());
+				throw new \RuntimeException('General error creating file: '.$response->Error()->Message());
 			}
 			if(!$response->MCM()->WasSuccess()) {
-				throw new RuntimeException('MCM error setting metadata for schema GUID = '.$this->metadataSchemaGUID . ': '.$response->MCM()->Error()->Message());
+				throw new \RuntimeException('MCM error creating file: '.$response->MCM()->Error()->Message());
 			}
 			$results = $response->MCM()->Results();
 			$this->file = array_pop($results);
