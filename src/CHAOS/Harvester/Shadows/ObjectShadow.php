@@ -68,6 +68,17 @@ class ObjectShadow extends Shadow {
 			throw new RuntimeException('Committing related objects has not yet been implemented.');
 		}
 		
+		if($harvester->hasOption('no-shadow-commitment')) {
+			$this->get($harvester, false);
+			if($this->object) {
+				$harvester->info("Because the 'no-shadow-commitment' runtime option is set, this object is not committed to CHAOS object '%s'.", $this->object->GUID);
+				return $this->object;
+			} else {
+				$harvester->info("Because the 'no-shadow-commitment' runtime option is set, this object is created as a CHAOS object.");
+				return;
+			}
+		}
+		
 		// Get or create the object, while saving it to the object itself.
 		if($this->skipped) {
 			// Get the chaos object, but do not create it if its not there.
