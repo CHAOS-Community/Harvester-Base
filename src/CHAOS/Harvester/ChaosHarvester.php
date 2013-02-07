@@ -36,9 +36,6 @@ class ChaosHarvester {
 	/** @var CHAOS\Harvester\Processors\Processor[string] */
 	protected $_processors;
 	
-	/** @var Filter[string] */
-	protected $_filters;
-	
 	/** @var ExternalClient[string] */
 	protected $_externalClients;
 	
