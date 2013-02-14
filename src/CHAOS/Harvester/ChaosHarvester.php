@@ -18,9 +18,6 @@ class ChaosHarvester {
 		$h->start();
 	}
 	
-	//const CHC_NAMESPACE = 'http://www.example.org/ChaosHarvesterConfiguration';
-	const CHC_SCHEMA_ENVVAR = 'CHC_SCHEMA';
-	
 	/** @var SessionRefreshingPortalClient */
 	protected $_chaos;
 	
@@ -367,28 +364,19 @@ class ChaosHarvester {
 		if($configuration == null || ! $configuration instanceof SimpleXMLElement) {
 			throw new RuntimeException("Error parsing configuration.");
 		}
-		/*
-		if(key_exists(self::CHC_NAMESPACE, $configuration->getDocNamespaces())) {
-			throw new RuntimeException("Configuration does not reference the CHC namespace.");
-		}
-		*/
-		if(key_exists(self::CHC_SCHEMA_ENVVAR, $_SERVER)) {
-			$schemaLocation = $_SERVER[self::CHC_SCHEMA_ENVVAR];
-			if(strlen($schemaLocation) > 0) {
-				// Validate the configuration file, against the schema.
-				$dom_document = new DOMDocument();
-				$dom_element = dom_import_simplexml($configuration);
-				$dom_element = $dom_document->importNode($dom_element, true);
-				$dom_element = $dom_document->appendChild($dom_element);
-				
-				if (!$dom_document->schemaValidate($schemaLocation)) {
-					trigger_error("The configuration file was invalid.", E_USER_ERROR);
-				} else {
-					self::info("Configuration validated sucessfully against the schema.");
-				}
-			}
+		
+		$schemaLocation = realpath(__DIR__ . '/../../../schemas/ChaosHarvesterConfiguration.xsd');
+		
+		// Validate the configuration file, against the schema.
+		$dom_document = new DOMDocument();
+		$dom_element = dom_import_simplexml($configuration);
+		$dom_element = $dom_document->importNode($dom_element, true);
+		$dom_element = $dom_document->appendChild($dom_element);
+		
+		if (!$dom_document->schemaValidate($schemaLocation)) {
+			trigger_error("The configuration file was invalid.", E_USER_ERROR);
 		} else {
-			trigger_error(sprintf('Warning: The %s environment variable is not sat - cannot validate configuration file.', self::CHC_SCHEMA_ENVVAR), E_USER_WARNING);
+			self::info("Configuration validated sucessfully against the schema.");
 		}
 		return true;
 	}
