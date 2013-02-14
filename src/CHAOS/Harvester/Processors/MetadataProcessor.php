@@ -3,8 +3,6 @@ namespace CHAOS\Harvester\Processors;
 
 use CHAOS\Harvester\Shadows\MetadataShadow;
 use CHAOS\Harvester\Shadows\ObjectShadow;
-use \RuntimeException;
-use \Exception;
 
 abstract class MetadataProcessor extends Processor {
 	
@@ -30,7 +28,7 @@ abstract class MetadataProcessor extends Processor {
 				} else {
 					$message = "No message ..";
 				}
-				throw new RuntimeException("Failed to fetch XML schemas from the Chaos system, for schema GUID '$this->_schemaGUID': ".$message);
+				throw new \RuntimeException("Failed to fetch XML schemas from the Chaos system, for schema GUID '$this->_schemaGUID': ".$message);
 			}
 			$schemas = $response->MCM()->Results();
 			$this->_schemaSource = $schemas[0]->SchemaXML;
@@ -51,7 +49,7 @@ abstract class MetadataProcessor extends Processor {
 		$this->_validate = $validate;
 	}
 	
-	public function process($externalObject, $shadow = null) {
+	public function process($externalObject, &$shadow = null) {
 		$this->_harvester->debug(__CLASS__." is processing.");
 		
 		assert($shadow instanceof ObjectShadow);
@@ -62,7 +60,7 @@ abstract class MetadataProcessor extends Processor {
 		$metadata->xml = $this->generateMetadata($externalObject, $shadow);
 		timed('generating-metadata');
 		if($metadata->xml == null) {
-			throw new Exception("An error occured when generating the metadata, check your implementation.");
+			throw new \Exception("An error occured when generating the metadata, check your implementation.");
 		}
 		
 		if($this->_validate === true || $this->_harvester->hasOption('debug-metadata')) {
@@ -74,11 +72,11 @@ abstract class MetadataProcessor extends Processor {
 			}
 			if($this->_validate === true) {
 				if($this->_schemaSource != null && $dom->schemaValidateSource($this->_schemaSource) === false) {
-					throw new RuntimeException("The generated metadata didn't match the schema.");
+					throw new \RuntimeException("The generated metadata didn't match the schema.");
 				} elseif($this->_schemaLocation != null && $dom->schemaValidate($this->_schemaLocation) === false) {
-					throw new RuntimeException("The generated metadata didn't match the schema.");
+					throw new \RuntimeException("The generated metadata didn't match the schema.");
 				} elseif($this->_schemaSource == null && $this->_schemaLocation == null) {
-					throw new RuntimeException("I was asked to validate the metadata against a schema which was not defined.");
+					throw new \RuntimeException("I was asked to validate the metadata against a schema which was not defined.");
 				}
 				timed('validating-metadata');
 			}
@@ -87,6 +85,6 @@ abstract class MetadataProcessor extends Processor {
 		return $shadow;
 	}
 	
-	public abstract function generateMetadata($externalObject, $shadow = null);
+	public abstract function generateMetadata($externalObject, &$shadow = null);
 	
 }

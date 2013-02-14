@@ -48,7 +48,7 @@ class XSLTMetadataProcessor extends MetadataProcessor {
 		}
 	}
 	
-	public function generateMetadata($externalObject, $shadow = null) {
+	public function generateMetadata($externalObject, &$shadow = null) {
 		$this->_harvester->debug(__CLASS__." is generating metadata.");
 		
 		if($externalObject instanceof DOMDocument) {

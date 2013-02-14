@@ -31,7 +31,7 @@ abstract class Processor implements \CHAOS\Harvester\Loadable {
 	 * @param unknown_type $externalObject The external object from the external service.
 	 * @param Shadow $shadow The shadow object that has to be build up.
 	 */
-	public abstract function process($externalObject, $shadow = null);
+	public abstract function process($externalObject, &$shadow = null);
 	
 	/**
 	 * Produce a shadow object which represents that this particular external object should not be processed.
@@ -39,7 +39,7 @@ abstract class Processor implements \CHAOS\Harvester\Loadable {
 	 * @param unknown_type $externalObject The external object from the external service.
 	 * @param Shadow $shadow The shadow object that has to be build up.
 	 */
-	public function skip($externalObject, $shadow = null) {
+	public function skip($externalObject, &$shadow = null) {
 		throw new \Exception("Was asked to skip an external object for a processing with a processor, but the skip method of the processor wasn't implemented.");
 		return $shadow;
 	}
