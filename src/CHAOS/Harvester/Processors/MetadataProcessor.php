@@ -49,6 +49,11 @@ abstract class MetadataProcessor extends Processor {
 		$this->_validate = $validate;
 	}
 	
+	/**
+	 * Processes the externalObject: Generates metadata and inserts it into the list of metadata shadows on the shadow given as argument.
+	 * @param unknown_type $externalObject
+	 * @return \CHAOS\Harvester\Shadows\ObjectShadow The ObjectShadow on which to put the metadata
+	 */
 	public function process($externalObject, &$shadow = null) {
 		$this->_harvester->debug(__CLASS__." is processing.");
 		
@@ -59,8 +64,8 @@ abstract class MetadataProcessor extends Processor {
 		timed();
 		$metadata->xml = $this->generateMetadata($externalObject, $shadow);
 		timed('generating-metadata');
-		if($metadata->xml == null) {
-			throw new \Exception("An error occured when generating the metadata, check your implementation.");
+		if($metadata->xml == null || !($metadata->xml instanceof \SimpleXMLElement) ) {
+			throw new \Exception("An error occured when generating the metadata, check your implementation. The generateMetadata function has to return a non-null SimpleXMLElement.");
 		}
 		
 		if($this->_validate === true || $this->_harvester->hasOption('debug-metadata')) {
@@ -85,6 +90,11 @@ abstract class MetadataProcessor extends Processor {
 		return $shadow;
 	}
 	
+	/**
+	 * Generates metadata from the externalObject and inserts it into the list of metadata shadows on the shadow given as argument.
+	 * @param unknown_type $externalObject
+	 * @return \CHAOS\Harvester\Shadows\ObjectShadow The ObjectShadow on which to put the metadata 
+	 */
 	public abstract function generateMetadata($externalObject, &$shadow = null);
 	
 }
