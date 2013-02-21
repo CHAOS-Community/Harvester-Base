@@ -395,17 +395,25 @@ class ChaosHarvester {
 	/**
 	 * Resolves a path to some filename or folder, possibly appending the BasePath of the configuration.
 	 * @param string $path
-	 * @return string|null An abstract 
+	 * @return string|null An absolute patht the the file or folder that was found, null if no file or folder was found.
 	 */
 	public function resolvePath($path) {
-		$alternativePath = strval($this->_configuration->BasePath) . DIRECTORY_SEPARATOR . $path;
+		// Is it an absolute path or relative to the CWD?
 		if(is_file($path) || is_dir($path)) {
 			return realpath($path);
-		} elseif(is_file($alternativePath) || is_dir($alternativePath)) {
-			return realpath($alternativePath);
-		} else {
-			return null;
 		}
+		// Relative to the base path of the configuration file?
+		$alternativePath = strval($this->_configuration->BasePath) . DIRECTORY_SEPARATOR . $path;
+		if(is_file($alternativePath) || is_dir($alternativePath)) {
+			return realpath($alternativePath);
+		}
+		// Relative to the path of the configuration file?
+		$alternativePath = dirname(strval($this->_options['configuration'])) . DIRECTORY_SEPARATOR . $path;
+		if(is_file($alternativePath) || is_dir($alternativePath)) {
+			return realpath($alternativePath);
+		}
+		// We found nothing interesting ...
+		return null;
 	}
 	
 	protected function loadClass($name, $namespace, $className, $requiredSuperclasses = array(), $requiredInterfaces = array(), $parameters = array()) {
