@@ -83,6 +83,7 @@ abstract class FileProcessor extends Processor implements \CHAOS\Harvester\Loada
 	 * @return bool True if the file exists.
 	 */
 	protected function externalFileExists($fileURL) {
+		timed();
 		if($this->fileExistsCurlHandle == null) {
 			$this->fileExistsCurlHandle = curl_init();
 			curl_setopt($this->fileExistsCurlHandle, CURLOPT_HEADER, true);
@@ -91,7 +92,9 @@ abstract class FileProcessor extends Processor implements \CHAOS\Harvester\Loada
 		}
 		curl_setopt($this->fileExistsCurlHandle, CURLOPT_URL, $fileURL);
 		$response = curl_exec($this->fileExistsCurlHandle);
-		return $this->concludeFileExistance($response);
+		$result = $this->concludeFileExistance($response);
+		timed('checking-file-existance');
+		return $result;
 	}
 	
 	/**
