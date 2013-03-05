@@ -79,6 +79,11 @@ class ObjectShadow extends Shadow {
 			}
 		}
 		
+		if($harvester->hasOption('require-files-on-objects') && count($this->fileShadows) == 0) {
+			$harvester->info("Object shadow skipped because 'require-files-on-objects' is set and no file shadows was attached.");
+			$this->skipped = true;
+		}
+		
 		// Get or create the object, while saving it to the object itself.
 		if($this->skipped) {
 			// Get the chaos object, but do not create it if its not there.
@@ -150,6 +155,7 @@ class ObjectShadow extends Shadow {
 		// Only do this if an object was returned from the query.
 		if($this->object !== null) {
 			if($this->unpublishEverywhere) {
+				// TODO: This has actually been implemented now, it could be fixed.
 				throw new RuntimeException("Unpublish everywhere is not supported at this moment, as the CHAOS service does not support listing the accesspoints to which the object is published.");
 			} else {
 				foreach($this->unpublishAccesspointGUIDs as $accesspointGUID) {
