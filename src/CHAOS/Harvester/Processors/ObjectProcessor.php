@@ -80,21 +80,18 @@ abstract class ObjectProcessor extends Processor {
 	 * @return ObjectShadow The initialized shadow.
 	 */
 	function initializeShadow(&$shadow) {
-		if($shadow->skipped) {
-			if($this->_unpublishEverywhere === true) {
-				$this->_harvester->debug("This object will be unpublished from every accesspoint.");
-				$shadow->unpublishEverywhere = $this->_unpublishEverywhere;
-			} else {
-				foreach($this->_unpublishAccesspointGUIDs as $guid) {
-					$this->_harvester->debug("This object will be unpublished from accesspoint # $guid");
-					$shadow->unpublishAccesspointGUIDs[] = $guid;
-				}
-			}
+		if($this->_unpublishEverywhere === true) {
+			$this->_harvester->debug("If the object is skipped, it will be unpublished from every accesspoint.");
+			$shadow->unpublishEverywhere = $this->_unpublishEverywhere;
 		} else {
-			foreach($this->_publishAccesspointGUIDs as $guid) {
-				$this->_harvester->debug("This object will be published to accesspoint # $guid");
-				$shadow->publishAccesspointGUIDs[] = $guid;
+			foreach($this->_unpublishAccesspointGUIDs as $guid) {
+				$this->_harvester->debug("This object will be unpublished from accesspoint # $guid");
+				$shadow->unpublishAccesspointGUIDs[] = $guid;
 			}
+		}
+		foreach($this->_publishAccesspointGUIDs as $guid) {
+			$this->_harvester->debug("This object will be published to accesspoint # $guid");
+			$shadow->publishAccesspointGUIDs[] = $guid;
 		}
 		$shadow->objectTypeId = $this->_objectTypeId;
 		$shadow->folderId = $this->_folderId;
@@ -102,7 +99,8 @@ abstract class ObjectProcessor extends Processor {
 	}
 	
 	function skip($externalObject, &$shadow = null) {
-		$shadow = new SkippedObjectShadow();
+		$shadow = new ObjectShadow();
+		$shadow->skipped = true;
 		$shadow = $this->initializeShadow($shadow);
 		$shadow->query = $this->generateQuery($externalObject);
 		
