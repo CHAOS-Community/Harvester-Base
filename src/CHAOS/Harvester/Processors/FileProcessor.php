@@ -42,7 +42,9 @@ abstract class FileProcessor extends Processor implements \CHAOS\Harvester\Loada
 		// Check if a destination exists that can be used for this file.
 		foreach($this->_destinations as $destination) {
 			$baseURL = $destination['baseURL'];
+			//$this->_harvester->debug("Trying '%s' as basepath for '%s'.", $baseURL, $url);
 			if(preg_match("#$baseURL(.*)#", $url, $matches)) {
+				//$this->_harvester->debug("Success!");
 				// We found a matching destination
 				if(!$this->shouldCheckFileExistance() || $this->externalFileExists($url)) {
 					$pathinfo = $this->extractURLPathinfo($matches[1]);
@@ -84,6 +86,7 @@ abstract class FileProcessor extends Processor implements \CHAOS\Harvester\Loada
 	 */
 	protected function externalFileExists($fileURL) {
 		timed();
+		$this->_harvester->debug("externalFileExists called with '%s'.", $fileURL);
 		if($this->fileExistsCurlHandle == null) {
 			$this->fileExistsCurlHandle = curl_init();
 			curl_setopt($this->fileExistsCurlHandle, CURLOPT_HEADER, true);
