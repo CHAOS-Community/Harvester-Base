@@ -1,3 +1,6 @@
 [submodule "lib/Timed-PHP"]
 	path = lib/Timed-PHP
 	url = https://github.com/kraenhansen/Timed-PHP
+[submodule "lib/CHAOS-Client"]
+	path = lib/CHAOS-Client
+	url = https://github.com/CHAOS-Community/CHAOS.Portal.Client-PHP.git
