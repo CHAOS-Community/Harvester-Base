@@ -85,12 +85,12 @@ abstract class ObjectProcessor extends Processor {
 			$shadow->unpublishEverywhere = $this->_unpublishEverywhere;
 		} else {
 			foreach($this->_unpublishAccesspointGUIDs as $guid) {
-				$this->_harvester->debug("This object will be unpublished from accesspoint # $guid");
+				// $this->_harvester->debug("This object will be unpublished from accesspoint # $guid");
 				$shadow->unpublishAccesspointGUIDs[] = $guid;
 			}
 		}
 		foreach($this->_publishAccesspointGUIDs as $guid) {
-			$this->_harvester->debug("This object will be published to accesspoint # $guid");
+			// $this->_harvester->debug("This object will be published to accesspoint # $guid");
 			$shadow->publishAccesspointGUIDs[] = $guid;
 		}
 		$shadow->objectTypeId = $this->_objectTypeId;
