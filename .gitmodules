@@ -1,0 +1,3 @@
+[submodule "Timed-PHP"]
+	path = Timed-PHP
+	url = https://github.com/kraenhansen/Timed-PHP
