@@ -54,7 +54,7 @@ abstract class MetadataProcessor extends Processor {
 	 * @param unknown_type $externalObject
 	 * @return \CHAOS\Harvester\Shadows\ObjectShadow The ObjectShadow on which to put the metadata
 	 */
-	public function process($externalObject, &$shadow = null) {
+	public function process(&$externalObject, &$shadow = null) {
 		$this->_harvester->debug(__CLASS__." is processing.");
 		
 		assert($shadow instanceof ObjectShadow);

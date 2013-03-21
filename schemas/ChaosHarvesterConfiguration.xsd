@@ -103,6 +103,7 @@
     						<element name="FileProcessor"
     							type="chc:FileProcessorType">
     						</element>
+    						<element name="PreProcessor" type="chc:PreProcessorType"></element>
     					</choice>
     				</sequence>
     			</complexType>
@@ -141,9 +142,13 @@
     						</documentation>
     					</annotation>
     				</element>
-    				<element name="Parameter"
-    					type="chc:ParameterType" maxOccurs="unbounded" minOccurs="0">
+    				<element name="Parameter" type="chc:ParameterType"
+    					maxOccurs="unbounded" minOccurs="0">
     				</element>
+    				<element name="PreProcessor" type="string" maxOccurs="unbounded" minOccurs="0">
+    					<annotation>
+    						<documentation>Names on pre processors to invoke before this processor is invoked.</documentation>
+    					</annotation></element>
     			</sequence>
     			<attribute name="name" type="string" use="required"></attribute>
 
@@ -362,5 +367,12 @@
     			<attribute name="name" type="string"></attribute>
     		</extension>
     	</simpleContent>
+    </complexType>
+
+    <complexType name="PreProcessorType">
+    	<complexContent>
+    		<extension base="chc:ProcessorType">
+    		</extension>
+    	</complexContent>
     </complexType>
 </schema>
