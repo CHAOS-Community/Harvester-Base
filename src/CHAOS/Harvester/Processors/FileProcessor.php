@@ -48,7 +48,9 @@ abstract class FileProcessor extends Processor implements \CHAOS\Harvester\Loada
 				// We found a matching destination
 				if(!$this->shouldCheckFileExistance() || $this->externalFileExists($url)) {
 					$pathinfo = $this->extractURLPathinfo($matches[1]);
-					return $this->createFileShadow($destination['id'], $pathinfo['dirname'], $pathinfo['basename']);
+					$fileShadow = $this->createFileShadow($destination['id'], $pathinfo['dirname'], $pathinfo['basename']);
+					$fileShadow->URL = $url;
+					return $fileShadow;
 				}
 			}
 		}

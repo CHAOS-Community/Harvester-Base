@@ -8,6 +8,9 @@ class FileShadow extends Shadow {
 	public $originalFilename;
 	public $folderPath;
 	
+	// This should actually be possible to derive from the destinationID and $folderPath and $filename.
+	public $URL;
+	
 	/**
 	 * 
 	 * @var \CHAOS\Harvester\Shadows\FileShadow
@@ -86,11 +89,17 @@ class FileShadow extends Shadow {
 	}
 	
 	protected function matchFile($file) {
+		//return $file->URL == $this->URL;
+		
 		if($this->originalFilename != $file->OriginalFilename) {
 			return false;
 		} elseif($this->formatID != $file->FormatID) {
 			return false;
 		} elseif(strstr($file->URL, $this->folderPath) === false) {
+			// This actually depends on how the destination is specified in the chaos service.
+			return false;
+		} elseif($this->URL != null && $file->URL != $this->URL) {
+			// This is an optional way of requireing a specific URL when the file is returned from the service.
 			// This actually depends on how the destination is specified in the chaos service.
 			return false;
 		} else {
