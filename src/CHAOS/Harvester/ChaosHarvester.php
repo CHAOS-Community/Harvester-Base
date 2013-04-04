@@ -224,7 +224,18 @@ class ChaosHarvester {
 					);
 				}
 				$this->_processors[$name]->setDestinations($destinations);
+			} elseif($type === 'PreProcessor') {
+				// Nothing special.
+			} else {
+				throw new \Exception("Loading an unknown type of processor: $type");
 			}
+			
+			// TODO: Fix!
+			$preprocessors = array();
+			foreach($processor->xpath("chc:PreProcessor") as $preprocessor) {
+				$preprocessors[] = strval($preprocessor);
+			}
+			$this->_processors[$name]->setPreProcessorsNames($preprocessors);
 			
 			// Parsing filters
 			$filters = array();
@@ -598,6 +609,8 @@ class ChaosHarvester {
 			$this->debug("Processing the external object with the '%s' processor.", $processorName);
 			$processor = $this->_processors[$processorName];
 			/* @var $processor \CHAOS\Harvester\Processors\Processor */
+			// Run all preprocessors before the filters.
+			$processor->preprocess();
 			$filterResult = $processor->passesFilters($externalObject);
 			try {
 				if($filterResult === true) {

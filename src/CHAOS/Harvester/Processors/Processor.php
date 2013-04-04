@@ -14,6 +14,7 @@ abstract class Processor implements \CHAOS\Harvester\Loadable {
 	 */
 	protected $_name;
 	
+	
 	/**
 	 * Constructs a processor.
 	 * @param \CHAOS\Harvester\ChaosHarvester $harvester a reference to the harvester which is going to ask this processor.
@@ -32,6 +33,22 @@ abstract class Processor implements \CHAOS\Harvester\Loadable {
 	 * @param Shadow $shadow The shadow object that has to be build up.
 	 */
 	public abstract function process(&$externalObject, &$shadow = null);
+
+	/**
+	 * An array of processors to call before starting the filtering.
+	 * @var PreProcessor[] Processors to call before starting the processor.
+	 */
+	protected $_preProcessorsNames;
+	
+	public function setPreProcessorsNames($preProcessorsNames) {
+		$this->_preProcessorsNames = $preProcessorsNames;
+	}
+	
+	public function preprocess() {
+		foreach($this->_preProcessorsNames as $processorName) {
+			$this->_harvester->process($processorName, $externalObject);
+		}
+	}
 	
 	/**
 	 * Produce a shadow object which represents that this particular external object should not be processed.
