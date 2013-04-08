@@ -3,7 +3,12 @@ namespace CHAOS\Harvester\Filters;
 class EmbeddedFilter extends Filter {
 	
 	public function passes($externalObject) {
-		$this->_harvester->debug($this->_name." is processing.");
+		if($this->_name) {
+			$this->_harvester->debug("The processor is filtered by the '%s' embedded filter.", $this->_name);
+		} else {
+			$this->_harvester->debug("The processor is filtered by an unnamed embedded filter.");
+		}
+		
 		return call_user_func($this->_function, $externalObject);
 	}
 	

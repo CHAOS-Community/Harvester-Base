@@ -44,7 +44,7 @@ abstract class Processor implements \CHAOS\Harvester\Loadable {
 		$this->_preProcessorsNames = $preProcessorsNames;
 	}
 	
-	public function preprocess() {
+	public function preprocess(&$externalObject, &$shadow = null) {
 		foreach($this->_preProcessorsNames as $processorName) {
 			$this->_harvester->process($processorName, $externalObject);
 		}

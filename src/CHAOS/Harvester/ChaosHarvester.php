@@ -606,11 +606,11 @@ class ChaosHarvester {
 		} elseif(!key_exists($processorName, $this->_processors)) {
 			throw new RuntimeException("No processor named $processorName loaded.");
 		} else {
-			$this->debug("Processing the external object with the '%s' processor.", $processorName);
+			$this->debug("PROCESSING with the '%s' processor.", $processorName);
 			$processor = $this->_processors[$processorName];
 			/* @var $processor \CHAOS\Harvester\Processors\Processor */
 			// Run all preprocessors before the filters.
-			$processor->preprocess();
+			$processor->preprocess($externalObject, $shadow);
 			$filterResult = $processor->passesFilters($externalObject);
 			try {
 				if($filterResult === true) {
