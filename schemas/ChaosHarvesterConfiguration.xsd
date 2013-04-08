@@ -261,6 +261,9 @@
     <complexType name="Filter">
     	<complexContent>
     		<extension base="chc:Class">
+    			<sequence>
+    				<element name="Parameter" type="chc:ParameterType" maxOccurs="unbounded" minOccurs="0"></element>
+    			</sequence>
     			<attribute name="name" type="string"></attribute>
     		</extension>
     	</complexContent>

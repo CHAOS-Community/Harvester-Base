@@ -247,11 +247,19 @@ class ChaosHarvester {
 				//var_dump($methodName);
 				$filterNamespace = strval($filterAttributes->namespace);
 				$filterClassName = strval($filterAttributes->className);
+
+				$parameters = $filter->xpath("chc:Parameter");
+				$params = array();
+				foreach($parameters as $parameter) {
+					/* @var $p SimpleXMLElement */
+					$parameterAttributes = $parameter->attributes();
+					$params[strval($parameterAttributes->name)] = strval($parameter);
+				}
 				
 				if(key_exists($filterName, $filters)) {
 					throw new RuntimeException("A filter by the name of '$filterName' is already loaded.");
 				} else {
-					$filters[$filterName] = $this->loadFilter($filterName, $filterNamespace, $filterClassName);
+					$filters[$filterName] = $this->loadFilter($filterName, $filterNamespace, $filterClassName, $params);
 				}
 			}
 			
@@ -431,6 +439,10 @@ class ChaosHarvester {
 		$requiredInterfaces[] = 'CHAOS\Harvester\Loadable';
 		$class = $namespace . "\\" . $className;
 		
+		if(!class_exists($class, true)) {
+			throw new RuntimeException("Error loading class $class for the $name Loadable.");
+		}
+		
 		$parents = class_parents($class, true);
 		foreach($requiredSuperclasses as $c) {
 			if(!key_exists($c, $parents)) {
@@ -475,8 +487,8 @@ class ChaosHarvester {
 		}
 	}
 	
-	protected function loadFilter($name, $namespace, $className) {
-		return $this->loadClass($name, $namespace, $className, array('CHAOS\Harvester\Filters\Filter'));
+	protected function loadFilter($name, $namespace, $className, $parameters = array()) {
+		return $this->loadClass($name, $namespace, $className, array('CHAOS\Harvester\Filters\Filter'), array(), $parameters);
 	}
 	
 	protected function loadExternalClient($name, $namespace, $className, $parameters) {
