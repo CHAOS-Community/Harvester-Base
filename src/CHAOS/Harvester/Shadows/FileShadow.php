@@ -89,8 +89,6 @@ class FileShadow extends Shadow {
 	}
 	
 	protected function matchFile($file) {
-		var_dump($file);
-		var_dump($this);
 		//return $file->URL == $this->URL;
 		if($this->originalFilename != $file->OriginalFilename) {
 			return false;
