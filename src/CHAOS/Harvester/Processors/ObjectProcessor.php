@@ -85,7 +85,7 @@ abstract class ObjectProcessor extends Processor {
 	 * @param ObjectShadow $shadow The object shadow, that should be initalized
 	 * @return ObjectShadow The initialized shadow.
 	 */
-	function initializeShadow(&$shadow) {
+	function initializeShadow($externalObject, &$shadow) {
 		if($this->_unpublishEverywhere === true) {
 			$this->_harvester->debug("If the object is skipped, it will be unpublished from every accesspoint.");
 			$shadow->unpublishEverywhere = $this->_unpublishEverywhere;
@@ -101,14 +101,14 @@ abstract class ObjectProcessor extends Processor {
 		}
 		$shadow->objectTypeId = $this->_objectTypeId;
 		$shadow->folderId = $this->_folderId;
+		$shadow->query = $this->generateQuery($externalObject);
 		return $shadow;
 	}
 	
 	function skip($externalObject, &$shadow = null) {
 		$shadow = new ObjectShadow();
 		$shadow->skipped = true;
-		$shadow = $this->initializeShadow($shadow);
-		$shadow->query = $this->generateQuery($externalObject);
+		$shadow = $this->initializeShadow($externalObject, $shadow);
 		
 		$shadow->commit($this->_harvester);
 		
