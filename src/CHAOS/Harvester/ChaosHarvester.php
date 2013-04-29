@@ -440,19 +440,19 @@ class ChaosHarvester {
 		$class = $namespace . "\\" . $className;
 		
 		if(!class_exists($class, true)) {
-			throw new RuntimeException("Error loading class $class for the $name Loadable.");
+			throw new RuntimeException("Error loading class $class for the '$name' Loadable.");
 		}
 		
 		$parents = class_parents($class, true);
 		foreach($requiredSuperclasses as $c) {
 			if(!key_exists($c, $parents)) {
-				throw new RuntimeException("Error loading class, $name at $class should extend $c");
+				throw new RuntimeException("Error loading class, '$name' at $class should extend $c");
 			}
 		}
 		$interfaces = class_implements($class, true);
 		foreach($requiredInterfaces as $i) {
 			if(!key_exists($i, $interfaces)) {
-				throw new RuntimeException("Error loading class, $name at $class should implement $i");
+				throw new RuntimeException("Error loading class, '$name' at $class should implement $i");
 			}
 		}
 		// We came this far ..
