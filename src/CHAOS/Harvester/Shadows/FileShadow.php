@@ -75,11 +75,13 @@ class FileShadow extends Shadow {
 			}
 			
 			$response = $harvester->getChaosClient()->File()->Create($object->GUID, $this->parentFileID, $this->formatID, $this->destinationID, $this->filename, $this->originalFilename, $this->folderPath);
+			assert($response instanceof \CHAOS\Portal\Client\Data\ServiceResult);
 			if(!$response->WasSuccess()) {
 				throw new \RuntimeException('General error creating file: '.$response->Error()->Message());
 			}
 			if(!$response->MCM()->WasSuccess()) {
-				throw new \RuntimeException('MCM error creating file: '.$response->MCM()->Error()->Message());
+				var_dump($this);
+				throw new \RuntimeException('MCM error creating file: '.$response->MCM()->Error()->Message(). "" . $response->MCM()->Error()->Stacktrace());
 			}
 			$results = $response->MCM()->Results();
 			$this->file = array_pop($results);
