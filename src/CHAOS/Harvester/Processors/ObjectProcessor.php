@@ -5,6 +5,12 @@ use CHAOS\Harvester\Shadows\ObjectShadow;
 abstract class ObjectProcessor extends Processor {
 	
 	/**
+	 * This method generates a Solr Query as a string, which when queried for should return the externalObjects representation in the CHAOS service.
+	 * @param unknown $externalObject
+	 */
+	protected abstract function generateQuery($externalObject);
+	
+	/**
 	 * The object type id of the objects that this object processor produces.
 	 * @var integer The object type ID to use when creating object shadows.
 	 */
