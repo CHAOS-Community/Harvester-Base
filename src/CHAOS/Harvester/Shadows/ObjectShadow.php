@@ -4,6 +4,15 @@ use \RuntimeException;
 class ObjectShadow extends Shadow {
 	
 	/**
+	 * Number of objects to be considered duplicates.
+	 * If more than this number of objects are returned from an object/get,
+	 * none of them are considered duplicates as the query are way too
+	 * ambiguous.
+	 * @var integer
+	 */
+	const DUPLICATE_OBJECTS_THESHOLD = 3;
+	
+	/**
 	 * Shadows of the related metadata.
 	 * @var MetadataShadow[]
 	 */
@@ -62,6 +71,12 @@ class ObjectShadow extends Shadow {
 	 */
 	protected $object;
 	
+	/**
+	 * These are the array of objects returned from the service, when the query is too ambiguous.
+	 * @var \stdClass[] Chaos Objects.
+	 */
+	protected $duplicateObjects = array();
+	
 	public function commit($harvester, $parent = null) {
 		$harvester->debug("Committing the shadow of an object.");
 		if($parent != null) {
@@ -92,6 +107,7 @@ class ObjectShadow extends Shadow {
 			$this->get($harvester);
 		
 			foreach($this->metadataShadows as $metadataShadow) {
+				assert($metadataShadow instanceof MetadataShadow);
 				$metadataShadow->commit($harvester, $this);
 			}
 			
@@ -136,47 +152,79 @@ class ObjectShadow extends Shadow {
 			}
 		}
 		
+		if($this->skipped !== true) {
+			$this->publishObject($harvester, $this->object);
+		} else {
+			// Only do this if an object was returned from the query.
+			if($this->object !== null) {
+				$this->unpublishObject($harvester, $this->object);
+			} else {
+				$harvester->info("No need to unpublish as this external object is not represented in CHAOS.");
+			}
+		}
+
+		// Unpublish any duplicate objects.
+		foreach($this->duplicateObjects as $duplicateObject) {
+			$this->unpublishObject($harvester, $duplicateObject);
+		}
+		
+		// This is sat by the call to get.
+		return $this->object;
+	}
+	
+	/**
+	 * Publish the object on the accesspoints given in the configuration.
+	 * @param CHAOS\Harvester\ChaosHarvester $harvester The harvester used to publish object. Get the chaos client from this.
+	 * @param \stdClass $object Chaos object to publish.
+	 * @throws RuntimeException If an error occures while publishing.
+	 */
+	protected function publishObject($harvester, $object) {
 		$start = new \DateTime();
 		// Publish this as of yesterday - servertime issues.
 		$aDayInterval = new \DateInterval("P1D");
 		$start->sub($aDayInterval);
 		
-		if($this->skipped !== true) {
-			foreach($this->publishAccesspointGUIDs as $accesspointGUID) {
-				$harvester->info(sprintf("Publishing to accesspoint = %s with startDate = %s", $accesspointGUID, $start->format("Y-m-d H:i:s")));
-				$response = $harvester->getChaosClient()->Object()->SetPublishSettings($this->object->GUID, $accesspointGUID, $start);
-				if(!$response->WasSuccess()) {
-					throw new RuntimeException("Couldn't set publish settings: {$response->Error()->Message()}");
-				}
-				if(!$response->MCM()->WasSuccess()) {
-					throw new RuntimeException("Couldn't set publish settings: (MCM) {$response->MCM()->Error()->Message()}");
-				}
+		foreach($this->publishAccesspointGUIDs as $accesspointGUID) {
+			$harvester->info(sprintf("Publishing %s to accesspoint = %s with startDate = %s", $object->GUID, $accesspointGUID, $start->format("Y-m-d H:i:s")));
+			$response = $harvester->getChaosClient()->Object()->SetPublishSettings($object->GUID, $accesspointGUID, $start);
+			if(!$response->WasSuccess()) {
+				throw new RuntimeException("Couldn't set publish settings: {$response->Error()->Message()}");
 			}
-		} else {
-			// Only do this if an object was returned from the query.
-			if($this->object !== null) {
-				if($this->unpublishEverywhere) {
-					// TODO: This has actually been implemented now, it could be fixed.
-					throw new RuntimeException("Unpublish everywhere is not supported at this moment, as the CHAOS service does not support listing the accesspoints to which the object is published.");
-				} else {
-					foreach($this->unpublishAccesspointGUIDs as $accesspointGUID) {
-						$harvester->info(sprintf("Unpublishing from accesspoint = %s", $accesspointGUID));
-						$response = $harvester->getChaosClient()->Object()->SetPublishSettings($this->object->GUID, $accesspointGUID);
-						if(!$response->WasSuccess()) {
-							throw new RuntimeException("Couldn't set publish settings: {$response->Error()->Message()}");
-						}
-						if(!$response->MCM()->WasSuccess()) {
-							throw new RuntimeException("Couldn't set publish settings: (MCM) {$response->MCM()->Error()->Message()}");
-						}
-					}
-				}
-			} else {
-				$harvester->info("No need to unpublish as this external object is not represented in CHAOS.");
+			if(!$response->MCM()->WasSuccess()) {
+				throw new RuntimeException("Couldn't set publish settings: (MCM) {$response->MCM()->Error()->Message()}");
+			}
+		}
+	}
+	
+	/**
+	 * Publish the object on the accesspoints given in the configuration.
+	 * @param CHAOS\Harvester\ChaosHarvester $harvester The harvester used to publish object. Get the chaos client from this.
+	 * @param \stdClass $object Chaos object to publish.
+	 * @throws RuntimeException If an error occures while publishing.
+	 */
+	protected function unpublishObject($harvester, $object) {
+		$unpublishAccesspointGUIDs = array();
+		
+		// If unpublish everywhere is set, loop through the accesspoints assoiciated with the object.
+		if($this->unpublishEverywhere) {
+			foreach($object->AccessPoints as $accesspoint) {
+				$unpublishAccesspointGUIDs[] = $accesspoint->AccessPointGUID;
 			}
 		}
 		
-		// This is sat by the call to get.
-		return $this->object;
+		// Add the access point guids from the configuration file.
+		$unpublishAccesspointGUIDs = array_merge($unpublishAccesspointGUIDs, $this->unpublishAccesspointGUIDs);
+		
+		foreach($unpublishAccesspointGUIDs as $accesspointGUID) {
+			$harvester->info(sprintf("Unpublishing %s from accesspoint = %s", $object->GUID, $accesspointGUID));
+			$response = $harvester->getChaosClient()->Object()->SetPublishSettings($object->GUID, $accesspointGUID);
+			if(!$response->WasSuccess()) {
+				throw new RuntimeException("Couldn't set publish settings: {$response->Error()->Message()}");
+			}
+			if(!$response->MCM()->WasSuccess()) {
+				throw new RuntimeException("Couldn't set publish settings: (MCM) {$response->MCM()->Error()->Message()}");
+			}
+		}
 	}
 	
 	/**
@@ -188,16 +236,18 @@ class ObjectShadow extends Shadow {
 			return $this->object;
 		}
 		
+		$this->duplicateObjects = array();
+		
 		$chaos = $harvester->getChaosClient();
 		
-		// TODO: Consider sorting by DateCreated.
 		$harvester->debug("Trying to get the CHAOS object from ".$this->query);
-		$response = $chaos->Object()->Get($this->query, 'DateCreated+desc', null, 0, 1, true, true, true, true);
+		$response = $chaos->Object()->Get($this->query, 'DateCreated+asc', null, 0, self::DUPLICATE_OBJECTS_THESHOLD+1, true, true, true, true);
 		if(!$response->WasSuccess()) {
 			throw new RuntimeException("General error when getting the object from the chaos service: " . $response->Error()->Message());
 		} elseif(!$response->MCM()->WasSuccess()) {
 			throw new RuntimeException("MCM error when getting the object from the chaos service: " . $response->MCM()->Error()->Message());
 		}
+		
 		$object = null;
 		if($response->MCM()->TotalCount() == 0) {
 			if($orCreate) {
@@ -220,9 +270,17 @@ class ObjectShadow extends Shadow {
 		} else {
 			if($response->MCM()->TotalCount() > 1) {
 				trigger_error('The query specified when getting an object resulted in '.$response->MCM()->TotalCount().' objects. Consider if the query should be more specific.', E_USER_WARNING);
+				if($response->MCM()->TotalCount()-1 > self::DUPLICATE_OBJECTS_THESHOLD) {
+					throw new \RuntimeException(strval($response->MCM()->TotalCount()-1)." duplicate objects, is too many (> ".strval(self::DUPLICATE_OBJECTS_THESHOLD)."). The query is way too ambiguous.");
+				}
 			}
 			$results = $response->MCM()->Results();
 			$object = $results[0];
+			foreach($results as $duplicateObject) {
+				if($duplicateObject != $object) {
+					$this->duplicateObjects[] = $duplicateObject;
+				}
+			}
 			$dateCreated = $object->DateCreated;
 			$harvester->info("Reusing object from service, created %s with GUID = %s.", date('r', $dateCreated), $object->GUID);
 		}
