@@ -4,7 +4,7 @@ Harvester-Base
 This can become the base of any harvester used to import data into a CHAOS service.
 
 ##Instructions
-Have a look at the project's [https://github.com/CHAOS-Community/Harvester-Base/wiki](WIKI).
+Have a look at the project's [WIKI](https://github.com/CHAOS-Community/Harvester-Base/wiki).
 
 ##Requirements
 * The CHAOS Client for PHP must be cloned from https://github.com/CHAOS-Community/CHAOS.Portal.Client-PHP into some local folder.
