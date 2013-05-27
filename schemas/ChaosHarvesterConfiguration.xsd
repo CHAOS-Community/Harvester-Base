@@ -262,7 +262,10 @@
     	<complexContent>
     		<extension base="chc:Class">
     			<sequence>
-    				<element name="Parameter" type="chc:ParameterType" maxOccurs="unbounded" minOccurs="0"></element>
+    				<element name="Parameter" type="chc:ParameterType"
+    					maxOccurs="unbounded" minOccurs="0">
+    				</element>
+    				<element name="IgnoreInMode" type="chc:StringOrEnvironmentVariable" maxOccurs="unbounded" minOccurs="0"></element>
     			</sequence>
     			<attribute name="name" type="string"></attribute>
     		</extension>

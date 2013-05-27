@@ -12,6 +12,7 @@ abstract class Filter implements \CHAOS\Harvester\Loadable {
 		$this->_harvester = $harvester;
 		$this->_harvester->debug("A ".__CLASS__." named '$name' was constructing.");
 		$this->_name = $name;
+		$this->_ignoreInModes = $parameters['ignoreInModes'];
 	}
 	
 	/**
@@ -26,9 +27,15 @@ abstract class Filter implements \CHAOS\Harvester\Loadable {
 	 */
 	protected $_name;
 	
+	protected $_ignoreInModes;
+	
 	/**
 	 * Does this external object pass the filter?
 	 * @return boolean|string True if it passes, false if indicating that it should be skipped, string if a message is attached.
 	 */
 	public abstract function passes($externalObject);
+	
+	public function shouldIgnoreInMode($mode) {
+		return in_array($mode, $this->_ignoreInModes);
+	}
 }

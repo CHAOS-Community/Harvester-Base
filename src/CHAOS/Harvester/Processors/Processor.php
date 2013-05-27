@@ -92,6 +92,11 @@ abstract class Processor implements \CHAOS\Harvester\Loadable {
 	public function passesFilters($externalObject) {
 		$finalResult = array();
 		foreach($this->_filters as $name => $f) {
+			assert($f instanceof \CHAOS\Harvester\Filters\Filter);
+			$ignore = $f->shouldIgnoreInMode($this->_harvester->getMode());
+			if($ignore) {
+				continue;
+			}
 			/* @var $f Filter */
 			$result = $f->passes($externalObject);
 			if($result !== true && $result !== null) {

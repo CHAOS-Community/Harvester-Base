@@ -94,15 +94,15 @@ class ChaosHarvester {
 		
 		// Parsing external clients
 		$this->_externalClients = array();
-		foreach($this->_configuration->xpath("chc:ExternalClient") as $filter) {
+		foreach($this->_configuration->xpath("chc:ExternalClient") as $client) {
 			/* @var $filter SimpleXMLElement */
-			$attributes = $filter->attributes();
+			$attributes = $client->attributes();
 			
 			$name = strval($attributes->name);
 			//var_dump($methodName);
 			$namespace = strval($attributes->namespace);
 			$className = strval($attributes->className);
-			$parameters = $filter->xpath("chc:Parameter");
+			$parameters = $client->xpath("chc:Parameter");
 			$params = array();
 			foreach($parameters as $parameter) {
 				/* @var $p SimpleXMLElement */
@@ -251,9 +251,16 @@ class ChaosHarvester {
 				$parameters = $filter->xpath("chc:Parameter");
 				$params = array();
 				foreach($parameters as $parameter) {
-					/* @var $p SimpleXMLElement */
+					/* @var $parameter SimpleXMLElement */
 					$parameterAttributes = $parameter->attributes();
 					$params[strval($parameterAttributes->name)] = strval($parameter);
+				}
+
+				$ignoreInMode = $filter->xpath("chc:IgnoreInMode");
+				$params['ignoreInModes'] = array();
+				foreach($ignoreInMode as $mode) {
+					/* @var $mode SimpleXMLElement */
+					$params['ignoreInModes'][] = strval($mode);
 				}
 				
 				if(key_exists($filterName, $filters)) {
@@ -530,7 +537,7 @@ class ChaosHarvester {
 	public function start($mode = null) {
 		// Load from options if not sat as an argument for the function.
 		if($mode == null && key_exists('mode', $this->_options)) {
-			$mode = $this->_options['mode'];
+			$mode = $this->getMode();
 		}
 		
 		if(key_exists($mode, $this->_modes)) {
@@ -561,6 +568,10 @@ class ChaosHarvester {
 		echo "\n";
 		echo "All done - ";
 		timed_print();
+	}
+	
+	public function getMode() {
+		return $this->_options['mode'];
 	}
 	
 	/**
