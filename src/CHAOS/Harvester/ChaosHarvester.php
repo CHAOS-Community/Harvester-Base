@@ -1,5 +1,7 @@
 <?php
 namespace CHAOS\Harvester;
+use CHAOS\Harvester\Shadows\ObjectShadow;
+
 use CHAOS\SessionRefreshingPortalClient;
 
 use CHAOS\Harvester\Shadows\Shadow;
@@ -38,6 +40,12 @@ class ChaosHarvester {
 	
 	/** @var SimpleXMLElement */
 	protected $_configuration;
+	
+	/** @var string[][] */
+	protected $_cleanUp = array(
+		'objectGUIDsConsidered' => array(),
+		'folderIDs' => array()
+	);
 	
 	function __construct($arguments = array()) {
 		$this->_options = self::extractOptionsFromArguments($arguments);
@@ -547,6 +555,9 @@ class ChaosHarvester {
 				// Execute the mode!
 				$this->_modes[$mode]->execute();
 				
+				// The all mode triggers a clean up!
+				$this->cleanUp();
+				
 			} else if($this->_modes[$mode] instanceof Modes\SingleByReferenceMode || $this->_modes[$mode] instanceof Modes\SetByReferenceMode) {
 				if(!key_exists('reference', $this->_options)) {
 					trigger_error('You have to specify a --reference={reference} in the '.$mode.' mode.', E_USER_ERROR);
@@ -581,6 +592,8 @@ class ChaosHarvester {
 	protected $processingExceptions = array();
 	
 	public function printProcessingExceptions() {
+		printf("\n");
+		
 		$total = count($this->processingExceptions);
 		if($total > 0) {
 			$this->info("Printing a summary of %u exceptions, thrown while processing:", $total);	
@@ -631,6 +644,13 @@ class ChaosHarvester {
 		} else {
 			$this->debug("PROCESSING with the '%s' processor.", $processorName);
 			$processor = $this->_processors[$processorName];
+			// If this is an ObjectProcessor - hang on to the folder ID for clean up.
+			if($processor instanceof \CHAOS\Harvester\Processors\ObjectProcessor) {
+				/* @var $processor \CHAOS\Harvester\Processors\ObjectProcessor */
+				if(!in_array($processor->getFolderId(), $this->_cleanUp['folderIDs'])) {
+					$this->_cleanUp['folderIDs'][] = $processor->getFolderId();
+				}
+			}
 			/* @var $processor \CHAOS\Harvester\Processors\Processor */
 			// Run all preprocessors before the filters.
 			$processor->preprocess($externalObject, $shadow);
@@ -653,6 +673,69 @@ class ChaosHarvester {
 				// Do nothing then ...
 				return $shadow;
 			}
+		}
+	}
+	
+	/**
+	 * This method is called by the Shadow\ObjectShadow when an object is either published or unpublished.
+	 * These objects GUID are saved for cleanup if the mode is an All mode.
+	 * @var \stdClass Chaos object.
+	 */
+	public function objectsConsidered($object) {
+		assert(property_exists($object, 'GUID'));
+		$this->_cleanUp['objectGUIDsConsidered'][] = $object->GUID;
+	}
+	
+	/**
+	 * Loops through all folder IDs used by any processor invoked, and unpublishes
+	 * all objects from any accesspoint which has not been touched by the harvester
+	 * during its execution.
+	 */
+	public function cleanUp() {
+		printf("\n");
+		
+		$this->info("Cleaing up: Looping through objects in touched CHAOS folders, to ensure nothing is published which shouldn't be.");
+		$objectGUIDsConsidered = $this->_cleanUp['objectGUIDsConsidered'];
+		$folderIDs = $this->_cleanUp['folderIDs'];
+		
+		// Loop through all the folder IDs and get all objects from CHAOS, which are published.
+		foreach($folderIDs as $folderID) {
+			$this->info("Visiting CHAOS folder #%u.", $folderID);
+			$pageIndex = 0;
+			$pageSize = 100;
+			$o = 0;
+			do {
+				$response = $this->getChaosClient()->Object()->GetByFolderID($folderID, false, null, $pageIndex, $pageSize, false, false, false, true);
+				foreach($response->MCM()->Results() as $object) {
+					//$this->debug("Cleaning object [%u/%u] of folder #%u.", $o, $response->MCM()->TotalCount(), $folderID);
+					// Check if this was considered.
+					if(!in_array($object->GUID, $objectGUIDsConsidered)) {
+						$this->debug("[%u/%u in folder #%u] Found an object (%s) which was not considered.", $o, $response->MCM()->TotalCount(), $folderID, $object->GUID);
+						
+						$unpublishAccesspointGUIDs = array();
+						// Remove this from any accesspoint it's been published to.
+						foreach($object->AccessPoints as $accesspoint) {
+							$unpublishAccesspointGUIDs[] = $accesspoint->AccessPointGUID;
+						}
+						
+						foreach($unpublishAccesspointGUIDs as $accesspointGUID) {
+							$this->info(sprintf("Unpublishing %s from accesspoint = %s", $object->GUID, $accesspointGUID));
+							$response = $this->getChaosClient()->Object()->SetPublishSettings($object->GUID, $accesspointGUID);
+							if(!$response->WasSuccess()) {
+								throw new RuntimeException("Couldn't set publish settings: {$response->Error()->Message()}");
+							}
+							if(!$response->MCM()->WasSuccess()) {
+								throw new RuntimeException("Couldn't set publish settings: (MCM) {$response->MCM()->Error()->Message()}");
+							}
+						}
+					} else {
+						// $this->debug("Skipping %s", $object->GUID);
+					}
+					$o++;
+				}
+				// Next!
+				$pageIndex++;
+			} while($o <= $response->MCM()->TotalCount());
 		}
 	}
 	

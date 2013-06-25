@@ -194,6 +194,7 @@ class ObjectShadow extends Shadow {
 				throw new RuntimeException("Couldn't set publish settings: (MCM) {$response->MCM()->Error()->Message()}");
 			}
 		}
+		$harvester->objectsConsidered($object);
 	}
 	
 	/**
@@ -225,13 +226,16 @@ class ObjectShadow extends Shadow {
 				throw new RuntimeException("Couldn't set publish settings: (MCM) {$response->MCM()->Error()->Message()}");
 			}
 		}
+		$harvester->objectsConsidered($object);
 	}
 	
 	/**
 	 * Get or create the object shadow.
-	 * @param CHAOS\Harvester\ChaosHarvester $harvester
+	 * @param \CHAOS\Harvester\ChaosHarvester $harvester
 	 */
 	public function get($harvester, $orCreate = true) {
+		assert($harvester instanceof \CHAOS\Harvester\ChaosHarvester);
+		
 		if($this->object != null) {
 			return $this->object;
 		}

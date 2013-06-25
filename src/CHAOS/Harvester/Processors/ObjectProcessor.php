@@ -30,11 +30,18 @@ abstract class ObjectProcessor extends Processor {
 	protected $_folderId;
 	
 	/**
-	 * Sets the object type id of the objects that this object processor produces.
+	 * Sets the folder id of the objects that this object processor produces.
 	 * @param integer $folderId The folder ID to use.
 	 */
 	function setFolderId($folderId) {
 		$this->_folderId = $folderId;
+	}
+	
+	/**
+	 * Gets the folder id of the objects that this object processor produces.
+	 */
+	function getFolderId() {
+		return $this->_folderId;
 	}
 	
 	/**
