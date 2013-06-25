@@ -12,7 +12,9 @@ abstract class Filter implements \CHAOS\Harvester\Loadable {
 		$this->_harvester = $harvester;
 		$this->_harvester->debug("A ".__CLASS__." named '$name' was constructing.");
 		$this->_name = $name;
-		$this->_ignoreInModes = $parameters['ignoreInModes'];
+		if(array_key_exists('ignoreInModes', $parameters) && is_array($parameters['ignoreInModes'])) {
+			$this->_ignoreInModes = $parameters['ignoreInModes'];
+		}
 	}
 	
 	/**
@@ -27,7 +29,7 @@ abstract class Filter implements \CHAOS\Harvester\Loadable {
 	 */
 	protected $_name;
 	
-	protected $_ignoreInModes;
+	protected $_ignoreInModes = array();
 	
 	/**
 	 * Does this external object pass the filter?
