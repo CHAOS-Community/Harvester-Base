@@ -35,8 +35,8 @@ class ObjectShadow extends Shadow {
 	public $objectTypeId;
 	
 	/**
-	 * The query to execute to get the object from the service.
-	 * @var string
+	 * The query (or an array of prioritized queries) to execute to get the object from the service.
+	 * @var string|string[]
 	 */
 	public $query;
 	
@@ -244,40 +244,32 @@ class ObjectShadow extends Shadow {
 		
 		$chaos = $harvester->getChaosClient();
 		
-		$harvester->debug("Trying to get the CHAOS object from ".$this->query);
-		$response = $chaos->Object()->Get($this->query, 'DateCreated+asc', null, 0, self::DUPLICATE_OBJECTS_THESHOLD+1, true, true, true, true);
-		if(!$response->WasSuccess()) {
-			throw new RuntimeException("General error when getting the object from the chaos service: " . $response->Error()->Message());
-		} elseif(!$response->MCM()->WasSuccess()) {
-			throw new RuntimeException("MCM error when getting the object from the chaos service: " . $response->MCM()->Error()->Message());
+		if(is_string($this->query)) {
+			$this->query = array($this->query);
 		}
-		
+
 		$object = null;
-		if($response->MCM()->TotalCount() == 0) {
-			if($orCreate) {
-				$response = $chaos->Object()->Create($this->objectTypeId, $this->folderId);
-				if(!$response->WasSuccess()) {
-					throw new RuntimeException("General error when creating the object in the chaos service: " . $response->Error()->Message());
-				} elseif(!$response->MCM()->WasSuccess()) {
-					throw new RuntimeException("MCM error when creating the object in the chaos service: " . $response->MCM()->Error()->Message());
-				}
-				if($response->MCM()->TotalCount() == 1) {
-					$results = $response->MCM()->Results();
-					$object = $results[0];
-					$harvester->info("Created a new object in the service with GUID = %s.", $object->GUID);
-				} else {
-					throw new RuntimeException("The service didn't respond with a single object when creating it.");
-				}
-			} else {
-				return null;
+		$query_problems = array();
+		foreach($this->query as $query) {
+			
+			$harvester->debug("Trying to get the CHAOS object from $query");
+			$response = $chaos->Object()->Get($query, 'DateCreated+asc', null, 0, self::DUPLICATE_OBJECTS_THESHOLD+1, true, true, true, true);
+			if(!$response->WasSuccess()) {
+				throw new RuntimeException("General error when getting the object from the chaos service: " . $response->Error()->Message());
+			} elseif(!$response->MCM()->WasSuccess()) {
+				throw new RuntimeException("MCM error when getting the object from the chaos service: " . $response->MCM()->Error()->Message());
 			}
-		} else {
+			
 			if($response->MCM()->TotalCount() > 1) {
 				trigger_error('The query specified when getting an object resulted in '.$response->MCM()->TotalCount().' objects. Consider if the query should be more specific.', E_USER_WARNING);
 				if($response->MCM()->TotalCount()-1 > self::DUPLICATE_OBJECTS_THESHOLD) {
-					throw new \RuntimeException(strval($response->MCM()->TotalCount()-1)." duplicate objects, is too many (> ".strval(self::DUPLICATE_OBJECTS_THESHOLD)."). The query is way too ambiguous.");
+					$query_problems[] = strval($response->MCM()->TotalCount()-1)." duplicate objects, is too many (> ".strval(self::DUPLICATE_OBJECTS_THESHOLD)."). The query is way too ambiguous.";
+					continue; // Skip this query!
 				}
+			} elseif($response->MCM()->TotalCount() == 0) {
+				continue; // Skip this query - nothing returned.
 			}
+			
 			$results = $response->MCM()->Results();
 			$object = $results[0];
 			foreach($results as $duplicateObject) {
@@ -287,6 +279,23 @@ class ObjectShadow extends Shadow {
 			}
 			$dateCreated = $object->DateCreated;
 			$harvester->info("Reusing object from service, created %s with GUID = %s.", date('r', $dateCreated), $object->GUID);
+			break;
+		}
+		
+		if($object == null && $orCreate) {
+			$response = $chaos->Object()->Create($this->objectTypeId, $this->folderId);
+			if(!$response->WasSuccess()) {
+				throw new RuntimeException("General error when creating the object in the chaos service: " . $response->Error()->Message());
+			} elseif(!$response->MCM()->WasSuccess()) {
+				throw new RuntimeException("MCM error when creating the object in the chaos service: " . $response->MCM()->Error()->Message());
+			}
+			if($response->MCM()->TotalCount() == 1) {
+				$results = $response->MCM()->Results();
+				$object = $results[0];
+				$harvester->info("Created a new object in the service with GUID = %s.", $object->GUID);
+			} else {
+				throw new RuntimeException("The service didn't respond with a single object when creating it.");
+			}
 		}
 		
 		$this->object = $object;
@@ -300,8 +309,10 @@ class ObjectShadow extends Shadow {
 	public function __toString() {
 		if($this->object != null && strlen($this->object->GUID) > 0) {
 			return strval($this->object->GUID);
-		} elseif(strlen($this->query) > 0) {
+		} elseif(is_string($this->query) && strlen($this->query) > 0) {
 			return "[chaos object found from {$this->query}]";
+		} elseif(is_array($this->query) && count($this->query) > 0) {
+			return "[chaos object found from ". implode(' OR ', $this->query) ."]";
 		} else {
 			return '';
 		}

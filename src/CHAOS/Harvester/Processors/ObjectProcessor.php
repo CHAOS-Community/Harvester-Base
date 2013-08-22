@@ -7,6 +7,7 @@ abstract class ObjectProcessor extends Processor {
 	/**
 	 * This method generates a Solr Query as a string, which when queried for should return the externalObjects representation in the CHAOS service.
 	 * @param unknown $externalObject
+	 * @return string[]|string String or array of (prioritized) queries that will result in the internal CHAOS object representing the particular external object.
 	 */
 	protected abstract function generateQuery($externalObject);
 	
