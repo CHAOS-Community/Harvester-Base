@@ -703,14 +703,14 @@ class ChaosHarvester {
 			$this->info("Visiting CHAOS folder #%u.", $folderID);
 			$pageIndex = 0;
 			$pageSize = 100;
-			$o = 0;
 			do {
 				$response = $this->getChaosClient()->Object()->GetByFolderID($folderID, false, null, $pageIndex, $pageSize, false, false, false, true);
+				$this->debug("Fetching page %u of %u in folder #%u.", $pageIndex, ceil($response->MCM()->TotalCount() / $pageSize), $folderID);
 				foreach($response->MCM()->Results() as $object) {
 					//$this->debug("Cleaning object [%u/%u] of folder #%u.", $o, $response->MCM()->TotalCount(), $folderID);
 					// Check if this was considered.
 					if(!in_array($object->GUID, $objectGUIDsConsidered)) {
-						$this->debug("[%u/%u in folder #%u] Found an object (%s) which was not considered.", $o, $response->MCM()->TotalCount(), $folderID, $object->GUID);
+						$this->debug("[Object in folder #%u] Found an object (%s) which was not considered.", $response->MCM()->TotalCount(), $folderID, $object->GUID);
 						
 						$unpublishAccesspointGUIDs = array();
 						// Remove this from any accesspoint it's been published to.
@@ -731,11 +731,10 @@ class ChaosHarvester {
 					} else {
 						// $this->debug("Skipping %s", $object->GUID);
 					}
-					$o++;
 				}
 				// Next!
 				$pageIndex++;
-			} while($o <= $response->MCM()->TotalCount());
+			} while($pageIndex * $pageSize < $response->MCM()->TotalCount());
 		}
 	}
 	
