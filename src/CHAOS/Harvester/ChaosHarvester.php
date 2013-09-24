@@ -710,7 +710,7 @@ class ChaosHarvester {
 					//$this->debug("Cleaning object [%u/%u] of folder #%u.", $o, $response->MCM()->TotalCount(), $folderID);
 					// Check if this was considered.
 					if(!in_array($object->GUID, $objectGUIDsConsidered)) {
-						$this->debug("[Object in folder #%u] Found an object (%s) which was not considered.", $response->MCM()->TotalCount(), $folderID, $object->GUID);
+						$this->debug("[Object in folder #%u] Found an object (%s) which was not considered.", $folderID, $object->GUID);
 						
 						$unpublishAccesspointGUIDs = array();
 						// Remove this from any accesspoint it's been published to.

@@ -153,11 +153,11 @@ class ObjectShadow extends Shadow {
 		}
 		
 		if($this->skipped !== true) {
-			$this->publishObject($harvester, $this->object);
+			$this->publishObject($harvester);
 		} else {
 			// Only do this if an object was returned from the query.
 			if($this->object !== null) {
-				$this->unpublishObject($harvester, $this->object);
+				$this->unpublishObject($harvester);
 			} else {
 				$harvester->info("No need to unpublish as this external object is not represented in CHAOS.");
 			}
@@ -175,10 +175,13 @@ class ObjectShadow extends Shadow {
 	/**
 	 * Publish the object on the accesspoints given in the configuration.
 	 * @param CHAOS\Harvester\ChaosHarvester $harvester The harvester used to publish object. Get the chaos client from this.
-	 * @param \stdClass $object Chaos object to publish.
+	 * @param \stdClass|null $object Chaos object to publish, if null use $this->object.
 	 * @throws RuntimeException If an error occures while publishing.
 	 */
-	protected function publishObject($harvester, $object) {
+	protected function publishObject($harvester, $object = null) {
+		if($object === null) {
+			$object = $this->object;
+		}
 		$start = new \DateTime();
 		// Publish this as of yesterday - servertime issues.
 		$aDayInterval = new \DateInterval("P1D");
@@ -198,12 +201,15 @@ class ObjectShadow extends Shadow {
 	}
 	
 	/**
-	 * Publish the object on the accesspoints given in the configuration.
-	 * @param CHAOS\Harvester\ChaosHarvester $harvester The harvester used to publish object. Get the chaos client from this.
-	 * @param \stdClass $object Chaos object to publish.
+	 * Unpublish the object on the accesspoints given in the configuration.
+	 * @param CHAOS\Harvester\ChaosHarvester $harvester The harvester used to unpublish object. Get the chaos client from this.
+	 * @param \stdClass|null $object Chaos object to unpublish, if null use $this->object.
 	 * @throws RuntimeException If an error occures while publishing.
 	 */
 	protected function unpublishObject($harvester, $object) {
+		if($object === null) {
+			$object = $this->object;
+		}
 		$unpublishAccesspointGUIDs = array();
 		
 		// If unpublish everywhere is set, loop through the accesspoints assoiciated with the object.
@@ -300,6 +306,40 @@ class ObjectShadow extends Shadow {
 		
 		$this->object = $object;
 		return $this->object;
+	}
+	
+	/**
+	 * Checks from the start and end-dates of the accesspoints of an object, if its published or not.
+	 * @param \stdClass $chaos_object The CHAOS object to check - this should be fetched from the CHAOS service with the includeAccesspoints option set to true.
+	 * @param string|null $accesspoint_guid The Accesspoint GUID to check if the object is published to. (optional) If null, any accesspoint will be considered.
+	 */
+	public static function isPublished($chaos_object, $accesspoint_guid = null) {
+		$now = new \DateTime();
+		foreach($chaos_object->AccessPoints as $accesspoint) {
+			if($accesspoint_guid === null || $accesspoint_guid === $accesspoint->AccessPointGUID) {
+				// Check the start and end dates.
+				if($accesspoint->StartDate == null) {
+					continue; // Skipping something which has no start date set.
+				}
+				$startDate = new \DateTime();
+				$startDate->setTimestamp($accesspoint->StartDate);
+				// Is now after the start date?
+				if($startDate < $now) {
+					// Is the end date not sat? I.e. is it at the end of our time?
+					if($accesspoint->EndDate == null) {
+						return true;
+					} else {
+						$endDate = new \DateTime();
+						$endDate->setTimestamp($accesspoint->EndDate);
+						// Are we still publishing this?
+						if($now < $endDate) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+		return false;
 	}
 	
 	/**
