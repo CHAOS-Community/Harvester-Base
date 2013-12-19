@@ -206,7 +206,7 @@ class ObjectShadow extends Shadow {
 	 * @param \stdClass|null $object Chaos object to unpublish, if null use $this->object.
 	 * @throws RuntimeException If an error occures while publishing.
 	 */
-	protected function unpublishObject($harvester, $object) {
+	protected function unpublishObject($harvester, $object = null) {
 		if($object === null) {
 			$object = $this->object;
 		}
