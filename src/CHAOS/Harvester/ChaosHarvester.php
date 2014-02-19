@@ -306,7 +306,15 @@ class ChaosHarvester {
 			
 			$this->_processors[$name]->setFilters($filters);
 		}
+		// Change directory to the configuration's base path.
+		chdir(strval($this->_configuration->BasePath));
 	}
+	
+	/*
+	public function custom_external_entity_loader($public, $system, $context) {
+		var_dump($system);
+	}
+	*/
 	
 	protected static function extractOptionsFromArguments($arguments) {
 		$result = array();
