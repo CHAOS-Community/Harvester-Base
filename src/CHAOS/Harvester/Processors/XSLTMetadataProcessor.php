@@ -137,7 +137,7 @@ class XSLTMetadataProcessor extends MetadataProcessor {
 						$value = $result[$groupName][$m];
 						if($valuesAsAttributes == true) {
 							// If the group is value, use it as the nodes value.
-							if(strtolower($groupName) == 'nodeValue') {
+							if(strtolower($groupName) == 'nodevalue') {
 								$match->nodeValue = $value;
 							} else {
 								$match->setAttribute($groupName, $value);
