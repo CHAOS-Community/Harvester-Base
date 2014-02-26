@@ -10,7 +10,7 @@ class ObjectShadow extends Shadow {
 	 * ambiguous.
 	 * @var integer
 	 */
-	const DUPLICATE_OBJECTS_THESHOLD = 10;
+	const DUPLICATE_OBJECTS_THESHOLD = 100;
 	
 	/**
 	 * Shadows of the related metadata.
