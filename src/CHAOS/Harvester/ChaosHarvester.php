@@ -559,7 +559,7 @@ class ChaosHarvester {
 		if(key_exists($mode, $this->_modes)) {
 			self::info("Starting harvester in '%s' mode.", $mode);
 			if($this->_modes[$mode] instanceof Modes\AllMode) {
-				
+
 				// Execute the mode!
 				$this->_modes[$mode]->execute();
 				
@@ -704,10 +704,13 @@ class ChaosHarvester {
 		
 		$this->info("Cleaing up: Looping through objects in touched CHAOS folders, to ensure nothing is published which shouldn't be.");
 		$objectGUIDsConsidered = $this->_cleanUp['objectGUIDsConsidered'];
-		$folderIDs = $this->_cleanUp['folderIDs'];
+		// Instead of cleaning up from the ids of the processed folder ids - take this information from the configuration.
+		// $folderIDs = $this->_cleanUp['folderIDs'];
+		$folderIDs = $this->_configuration->xpath("chc:Processors/chc:ObjectProcessor/chc:FolderId/text()");
 		
 		// Loop through all the folder IDs and get all objects from CHAOS, which are published.
 		foreach($folderIDs as $folderID) {
+			$folderID = strval($folderID);
 			$this->info("Visiting CHAOS folder #%u.", $folderID);
 			$pageIndex = 0;
 			$pageSize = 100;
