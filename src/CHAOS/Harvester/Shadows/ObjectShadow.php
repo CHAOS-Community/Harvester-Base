@@ -212,10 +212,20 @@ class ObjectShadow extends Shadow {
 	 * @throws RuntimeException If an error occures while publishing.
 	 */
 	public static function unpublishObject($harvester, $object = null, $unpublishEverywhere = true, $unpublishAccesspointGUIDs = array()) {
+		foreach($unpublishAccesspointGUIDs as &$accesspoint) {
+			// Make sure they are all lower-cased.
+			$accesspoint = strtolower($accesspoint);
+		}
 		
 		// If unpublish everywhere is set, loop through the accesspoints assoiciated with the object.
-		foreach($object->AccessPoints as $accesspoint) {
-			$unpublishAccesspointGUIDs[] = $accesspoint->AccessPointGUID;
+		if($unpublishEverywhere) {
+			foreach($object->AccessPoints as $accesspoint) {
+				$accesspoint_guid = strtolower($accesspoint->AccessPointGUID);
+				if(in_array($accesspoint_guid, $unpublishAccesspointGUIDs) === false) {
+					// This is a new one to unpublish from.
+					$unpublishAccesspointGUIDs[] = $accesspoint_guid;
+				}
+			}
 		}
 		
 		foreach($unpublishAccesspointGUIDs as $accesspointGUID) {
