@@ -317,7 +317,7 @@ class ObjectShadow extends Shadow {
 	public static function isPublished($chaos_object, $accesspoint_guid = null) {
 		$now = new \DateTime();
 		foreach($chaos_object->AccessPoints as $accesspoint) {
-			if($accesspoint_guid === null || $accesspoint_guid === $accesspoint->AccessPointGUID) {
+			if($accesspoint_guid === null || strtolower($accesspoint_guid) === strtolower($accesspoint->AccessPointGUID)) {
 				// Check the start and end dates.
 				if($accesspoint->StartDate == null) {
 					continue; // Skipping something which has no start date set.
