@@ -157,7 +157,7 @@ class ObjectShadow extends Shadow {
 		} else {
 			// Only do this if an object was returned from the query.
 			if($this->object !== null) {
-				self::unpublishObject($harvester, $this->object);
+				self::unpublishObject($harvester, $this->object, $this->unpublishEverywhere, $this->unpublishAccesspointGUIDs);
 			} else {
 				$harvester->info("No need to unpublish as this external object is not represented in CHAOS.");
 			}
@@ -165,7 +165,7 @@ class ObjectShadow extends Shadow {
 
 		// Unpublish any duplicate objects.
 		foreach($this->duplicateObjects as $duplicateObject) {
-			self::unpublishObject($harvester, $duplicateObject);
+			self::unpublishObject($harvester, $duplicateObject, true, $this->unpublishAccesspointGUIDs);
 		}
 		
 		// This is sat by the call to get.
@@ -211,18 +211,12 @@ class ObjectShadow extends Shadow {
 	 * @param \stdClass|null $object Chaos object to unpublish, if null use $this->object.
 	 * @throws RuntimeException If an error occures while publishing.
 	 */
-	public static function unpublishObject($harvester, $object = null) {
-		$unpublishAccesspointGUIDs = array();
+	public static function unpublishObject($harvester, $object = null, $unpublishEverywhere = true, $unpublishAccesspointGUIDs = array()) {
 		
 		// If unpublish everywhere is set, loop through the accesspoints assoiciated with the object.
-		if($this->unpublishEverywhere) {
-			foreach($object->AccessPoints as $accesspoint) {
-				$unpublishAccesspointGUIDs[] = $accesspoint->AccessPointGUID;
-			}
+		foreach($object->AccessPoints as $accesspoint) {
+			$unpublishAccesspointGUIDs[] = $accesspoint->AccessPointGUID;
 		}
-		
-		// Add the access point guids from the configuration file.
-		$unpublishAccesspointGUIDs = array_merge($unpublishAccesspointGUIDs, $this->unpublishAccesspointGUIDs);
 		
 		foreach($unpublishAccesspointGUIDs as $accesspointGUID) {
 			// Check if the object is published on the accesspoint.
