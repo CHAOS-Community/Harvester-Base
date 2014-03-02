@@ -157,7 +157,7 @@ class ObjectShadow extends Shadow {
 		} else {
 			// Only do this if an object was returned from the query.
 			if($this->object !== null) {
-				$this->unpublishObject($harvester);
+				self::unpublishObject($harvester, $this->object);
 			} else {
 				$harvester->info("No need to unpublish as this external object is not represented in CHAOS.");
 			}
@@ -165,7 +165,7 @@ class ObjectShadow extends Shadow {
 
 		// Unpublish any duplicate objects.
 		foreach($this->duplicateObjects as $duplicateObject) {
-			$this->unpublishObject($harvester, $duplicateObject);
+			self::unpublishObject($harvester, $duplicateObject);
 		}
 		
 		// This is sat by the call to get.
@@ -188,13 +188,18 @@ class ObjectShadow extends Shadow {
 		$start->sub($aDayInterval);
 		
 		foreach($this->publishAccesspointGUIDs as $accesspointGUID) {
-			$harvester->info(sprintf("Publishing %s to accesspoint = %s with startDate = %s", $object->GUID, $accesspointGUID, $start->format("Y-m-d H:i:s")));
-			$response = $harvester->getChaosClient()->Object()->SetPublishSettings($object->GUID, $accesspointGUID, $start);
-			if(!$response->WasSuccess()) {
-				throw new RuntimeException("Couldn't set publish settings: {$response->Error()->Message()}");
-			}
-			if(!$response->MCM()->WasSuccess()) {
-				throw new RuntimeException("Couldn't set publish settings: (MCM) {$response->MCM()->Error()->Message()}");
+			// Check if the object is published on the accesspoint.
+			if(self::isPublished($object, $accesspointGUID) === false) {
+				$harvester->info(sprintf("Publishing %s to accesspoint = %s with startDate = %s", $object->GUID, $accesspointGUID, $start->format("Y-m-d H:i:s")));
+				$response = $harvester->getChaosClient()->Object()->SetPublishSettings($object->GUID, $accesspointGUID, $start);
+				if(!$response->WasSuccess()) {
+					throw new RuntimeException("Couldn't set publish settings: {$response->Error()->Message()}");
+				}
+				if(!$response->MCM()->WasSuccess()) {
+					throw new RuntimeException("Couldn't set publish settings: (MCM) {$response->MCM()->Error()->Message()}");
+				}
+			} else {
+				$harvester->debug(sprintf("Skipping the publishing of %s from accesspoint = %s: It's allready published there.", $object->GUID, $accesspointGUID));
 			}
 		}
 		$harvester->objectsConsidered($object);
@@ -206,10 +211,7 @@ class ObjectShadow extends Shadow {
 	 * @param \stdClass|null $object Chaos object to unpublish, if null use $this->object.
 	 * @throws RuntimeException If an error occures while publishing.
 	 */
-	protected function unpublishObject($harvester, $object = null) {
-		if($object === null) {
-			$object = $this->object;
-		}
+	public static function unpublishObject($harvester, $object = null) {
 		$unpublishAccesspointGUIDs = array();
 		
 		// If unpublish everywhere is set, loop through the accesspoints assoiciated with the object.
@@ -223,13 +225,18 @@ class ObjectShadow extends Shadow {
 		$unpublishAccesspointGUIDs = array_merge($unpublishAccesspointGUIDs, $this->unpublishAccesspointGUIDs);
 		
 		foreach($unpublishAccesspointGUIDs as $accesspointGUID) {
-			$harvester->info(sprintf("Unpublishing %s from accesspoint = %s", $object->GUID, $accesspointGUID));
-			$response = $harvester->getChaosClient()->Object()->SetPublishSettings($object->GUID, $accesspointGUID);
-			if(!$response->WasSuccess()) {
-				throw new RuntimeException("Couldn't set publish settings: {$response->Error()->Message()}");
-			}
-			if(!$response->MCM()->WasSuccess()) {
-				throw new RuntimeException("Couldn't set publish settings: (MCM) {$response->MCM()->Error()->Message()}");
+			// Check if the object is published on the accesspoint.
+			if(self::isPublished($object, $accesspointGUID)) {
+				$harvester->info(sprintf("Unpublishing %s from accesspoint = %s", $object->GUID, $accesspointGUID));
+				$response = $harvester->getChaosClient()->Object()->SetPublishSettings($object->GUID, $accesspointGUID);
+				if(!$response->WasSuccess()) {
+					throw new RuntimeException("Couldn't set publish settings: {$response->Error()->Message()}");
+				}
+				if(!$response->MCM()->WasSuccess()) {
+					throw new RuntimeException("Couldn't set publish settings: (MCM) {$response->MCM()->Error()->Message()}");
+				}
+			} else {
+				$harvester->debug(sprintf("Skipping the unpublishing of %s from accesspoint = %s: It's not published there anyway.", $object->GUID, $accesspointGUID));
 			}
 		}
 		$harvester->objectsConsidered($object);

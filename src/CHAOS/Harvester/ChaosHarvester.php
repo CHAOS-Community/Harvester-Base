@@ -722,7 +722,8 @@ class ChaosHarvester {
 					// Check if this was considered.
 					if(!in_array($object->GUID, $objectGUIDsConsidered)) {
 						$this->debug("[Object in folder #%u] Found an object (%s) which was not considered.", $folderID, $object->GUID);
-						
+						ObjectShadow::unpublishObject($this, $object);
+						/*
 						$unpublishAccesspointGUIDs = array();
 						// Remove this from any accesspoint it's been published to.
 						foreach($object->AccessPoints as $accesspoint) {
@@ -739,6 +740,7 @@ class ChaosHarvester {
 								throw new RuntimeException("Couldn't set publish settings: (MCM) {$response->MCM()->Error()->Message()}");
 							}
 						}
+						*/
 					} else {
 						// $this->debug("Skipping %s", $object->GUID);
 					}
