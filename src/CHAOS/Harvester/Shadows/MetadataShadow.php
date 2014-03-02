@@ -13,19 +13,15 @@ class MetadataShadow extends Shadow {
 	public $languageCode = 'da';
 	
 	public function commit($harvester, $parent = null) {
-		$harvester->debug("Committing the shadow of some metadata.");
+		$harvester->info("Committing the shadow of some %s metadata.", $this->metadataSchemaGUID);
 		if($parent == null || !$parent instanceof ObjectShadow) {
-			trigger_error('The shadow given as $parent argument has to be initialized and of type Object Shadow');
+			throw new \RuntimeException('The shadow given as $parent argument has to be initialized and of type Object Shadow');
 		}
 		$object = $parent->get($harvester);
 		$metadata = array_filter($object->Metadatas, array($this, 'matchMetadataSchema'));
 		$revisionID = null;
-		if(count($metadata) == 1) {
+		if(count($metadata) >= 1) {
 			$metadata = array_pop($metadata);
-			$revisionID = $metadata->RevisionID;
-		} elseif(count($metadata) > 1) {
-			$metadata = array_pop($metadata);
-			trigger_error('It looks like the chaos object has more than one metadata of the specified schema (SchemaGUID = ' .$this->metadataSchemaGUID. ').', E_USER_WARNING);
 			$revisionID = $metadata->RevisionID;
 		}
 		
