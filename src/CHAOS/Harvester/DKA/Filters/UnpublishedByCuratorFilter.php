@@ -9,8 +9,7 @@ class UnpublishedByCuratorFilter extends \CHAOS\Harvester\Filters\Filter {
 	public function passes($externalObject, $objectShadow) {
 		$object = $objectShadow->get($this->_harvester);
 		$metadataSchemes = $object->Metadatas;
-		var_dump($object);
-		exit();
+		
 		foreach ($metadataSchemes as $metadata) {
 
 			// DKA2 metadata scheme.
