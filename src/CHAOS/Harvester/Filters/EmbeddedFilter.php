@@ -2,14 +2,14 @@
 namespace CHAOS\Harvester\Filters;
 class EmbeddedFilter extends Filter {
 	
-	public function passes($externalObject) {
+	public function passes($externalObject, $objectShadow) {
 		if($this->_name) {
 			$this->_harvester->debug("The processor is filtered by the '%s' embedded filter.", $this->_name);
 		} else {
 			$this->_harvester->debug("The processor is filtered by an unnamed embedded filter.");
 		}
 		
-		return call_user_func($this->_function, $externalObject);
+		return call_user_func_array($this->_function, array($externalObject, $objectShadow));
 	}
 	
 	/**
@@ -24,6 +24,6 @@ class EmbeddedFilter extends Filter {
 	 * @param string $code
 	 */
 	public function setCode($code) {
-		$this->_function = create_function('$externalObject', $code);
+		$this->_function = create_function('$externalObject,$objectShadow', $code);
 	}
 }

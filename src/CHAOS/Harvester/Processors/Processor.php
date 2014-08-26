@@ -89,7 +89,7 @@ abstract class Processor implements \CHAOS\Harvester\Loadable {
 	 * Does the given external object pass the filters registered for this processor?
 	 * @param unknown_type $externalObject
 	 */
-	public function passesFilters($externalObject) {
+	public function passesFilters($externalObject, $objectShadow) {
 		$finalResult = array();
 		foreach($this->_filters as $name => $f) {
 			assert($f instanceof \CHAOS\Harvester\Filters\Filter);
@@ -98,7 +98,7 @@ abstract class Processor implements \CHAOS\Harvester\Loadable {
 				continue;
 			}
 			/* @var $f Filter */
-			$result = $f->passes($externalObject);
+			$result = $f->passes($externalObject, $objectShadow);
 			if($result !== true && $result !== null) {
 				$finalResult[] = array('name' => $name, 'filter' => $f, 'reason' => $result);
 			}

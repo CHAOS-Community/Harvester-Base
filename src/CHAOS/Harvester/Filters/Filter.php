@@ -35,7 +35,7 @@ abstract class Filter implements \CHAOS\Harvester\Loadable {
 	 * Does this external object pass the filter?
 	 * @return boolean|string True if it passes, false if indicating that it should be skipped, string if a message is attached.
 	 */
-	public abstract function passes($externalObject);
+	public abstract function passes($externalObject, $objectShadow);
 	
 	public function shouldIgnoreInMode($mode) {
 		return in_array($mode, $this->_ignoreInModes);

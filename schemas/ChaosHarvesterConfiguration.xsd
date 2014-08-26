@@ -22,6 +22,10 @@
     			type="chc:StringOrEnvironmentVariable" maxOccurs="1"
     			minOccurs="1">
     		</element>
+    		<element name="Timezone"
+    			type="chc:StringOrEnvironmentVariable" maxOccurs="1"
+    			minOccurs="1">
+    		</element>
     		<element name="BasePath"
     			type="chc:StringOrEnvironmentVariable" maxOccurs="1"
     			minOccurs="0">

@@ -86,6 +86,10 @@ class ChaosHarvester {
 		// Notify which harvester was just started.
 		self::info("Starting the harvester for the '%s' project of %s.", $this->_configuration->Project, $this->_configuration->Organisation);
 		
+		if(date_default_timezone_set($this->_configuration->Timezone) === false) {
+			trigger_error("Fatal error: The configuration's timezone was invalid, read http://dk2.php.net/manual/en/timezones.php");
+		}
+
 		// Append include paths from configuration.
 		$this->processIncludePath();
 		
@@ -662,7 +666,7 @@ class ChaosHarvester {
 			/* @var $processor \CHAOS\Harvester\Processors\Processor */
 			// Run all preprocessors before the filters.
 			$processor->preprocess($externalObject, $shadow);
-			$filterResult = $processor->passesFilters($externalObject);
+			$filterResult = $processor->passesFilters($externalObject, $shadow);
 			try {
 				if($filterResult === true) {
 					return $processor->process($externalObject, $shadow);

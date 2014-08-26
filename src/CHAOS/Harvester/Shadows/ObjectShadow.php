@@ -99,13 +99,11 @@ class ObjectShadow extends Shadow {
 			$this->skipped = true;
 		}
 		
-		// Get or create the object, while saving it to the object itself.
-		if($this->skipped) {
-			// Get the chaos object, but do not create it if its not there.
-			$this->get($harvester, false);
-		} else {
-			$this->get($harvester);
 		
+		if($this->skipped !== true) {
+			// Get or create the object, while saving it to the object itself.
+			$this->ensureChaosObject($harvester);
+
 			foreach($this->metadataShadows as $metadataShadow) {
 				assert($metadataShadow instanceof MetadataShadow);
 				$metadataShadow->commit($harvester, $this);
@@ -150,9 +148,6 @@ class ObjectShadow extends Shadow {
 				// TODO: Consider adding a list of committed object shadows to prevent cycles.
 				$relatedObjectShadow->commit($harvester, $this);
 			}
-		}
-		
-		if($this->skipped !== true) {
 			$this->publishObject($harvester);
 		} else {
 			// Only do this if an object was returned from the query.
@@ -240,7 +235,7 @@ class ObjectShadow extends Shadow {
 					throw new RuntimeException("Couldn't set publish settings: (MCM) {$response->MCM()->Error()->Message()}");
 				}
 			} else {
-				$harvester->debug(sprintf("Skipping the unpublishing of %s from accesspoint = %s: It's not published there anyway.", $object->GUID, $accesspointGUID));
+				$harvester->debug(sprintf("Skipping the unpublishing of %s from accesspoint = %s: It's not published there anyway.", $object->GUID, is_string($accesspointGUID) ? $accesspointGUID : '\'NULL\''));
 			}
 		}
 		$harvester->objectsConsidered($object);
@@ -250,7 +245,7 @@ class ObjectShadow extends Shadow {
 	 * Get or create the object shadow.
 	 * @param \CHAOS\Harvester\ChaosHarvester $harvester
 	 */
-	public function get($harvester, $orCreate = true) {
+	public function get($harvester) {
 		assert($harvester instanceof \CHAOS\Harvester\ChaosHarvester);
 		
 		if($this->object != null) {
@@ -264,7 +259,7 @@ class ObjectShadow extends Shadow {
 		if(is_string($this->query)) {
 			$this->query = array($this->query);
 		}
-
+		
 		$object = null;
 		$query_problems = array();
 		foreach($this->query as $query) {
@@ -299,7 +294,16 @@ class ObjectShadow extends Shadow {
 			break;
 		}
 		
-		if($object == null && $orCreate) {
+		$this->object = $object;
+		return $this->object;
+	}
+
+	/**
+	 * Ensure chaos object create
+	 * @param \CHAOS\Harvester\ChaosHarvester $harvester
+	 */
+	public function ensureChaosObject($harvester) {
+		if($this->get($harvester) == null) {
 			$response = $chaos->Object()->Create($this->objectTypeId, $this->folderId);
 			if(!$response->WasSuccess()) {
 				throw new RuntimeException("General error when creating the object in the chaos service: " . $response->Error()->Message());
@@ -314,9 +318,6 @@ class ObjectShadow extends Shadow {
 				throw new RuntimeException("The service didn't respond with a single object when creating it.");
 			}
 		}
-		
-		$this->object = $object;
-		return $this->object;
 	}
 	
 	/**
@@ -327,7 +328,7 @@ class ObjectShadow extends Shadow {
 	public static function isPublished($chaos_object, $accesspoint_guid = null) {
 		$now = new \DateTime();
 		foreach($chaos_object->AccessPoints as $accesspoint) {
-			if($accesspoint_guid === null || strtolower($accesspoint_guid) === strtolower($accesspoint->AccessPointGUID)) {
+			if($accesspoint_guid === null || (is_string($accesspoint_guid) && strtolower($accesspoint_guid) === strtolower($accesspoint->AccessPointGUID))) {
 				// Check the start and end dates.
 				if($accesspoint->StartDate == null) {
 					continue; // Skipping something which has no start date set.
