@@ -10,7 +10,6 @@ class UnpublishedByCuratorFilter extends \CHAOS\Harvester\Filters\Filter {
 		$object = $objectShadow->get($this->_harvester);
 
 		if (!empty($object) && !empty($object->Metadatas)) {
-			var_dump('test');
 			$metadataSchemes = $object->Metadatas;
 			
 			foreach ($metadataSchemes as $metadata) {
