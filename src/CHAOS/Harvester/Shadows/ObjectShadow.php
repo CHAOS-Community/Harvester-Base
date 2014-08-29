@@ -303,6 +303,14 @@ class ObjectShadow extends Shadow {
 	 * @param \CHAOS\Harvester\ChaosHarvester $harvester
 	 */
 	public function ensureChaosObject($harvester) {
+		assert($harvester instanceof \CHAOS\Harvester\ChaosHarvester);
+		
+		if($this->object != null) {
+			return $this->object;
+		}
+		
+		$chaos = $harvester->getChaosClient();
+		
 		if($this->get($harvester) == null) {
 			$response = $chaos->Object()->Create($this->objectTypeId, $this->folderId);
 			if(!$response->WasSuccess()) {
@@ -312,7 +320,8 @@ class ObjectShadow extends Shadow {
 			}
 			if($response->MCM()->TotalCount() == 1) {
 				$results = $response->MCM()->Results();
-				$object = $results[0];
+				$this->object = $results[0];
+				return $this->object;
 				$harvester->info("Created a new object in the service with GUID = %s.", $object->GUID);
 			} else {
 				throw new RuntimeException("The service didn't respond with a single object when creating it.");
