@@ -134,14 +134,6 @@ class ObjectShadow extends Shadow {
 				}
 			}
 			
-			/*
-			// FIXME: Consider deleting unsued files, ie. files that is related to a reused CHAOS object but which are not in the shadows.
-			if(count($this->object->Files) > count($this->fileShadows)) {
-				$harvester->info("The reused CHAOS object has more files referenced than the object shadow has. But as the CHAOS client has not implemented a File/Delete call this cannot be completed.");
-				
-			}
-			*/
-			
 			$harvester->info($fileLine);
 			
 			foreach($this->relatedObjectShadows as $relatedObjectShadow) {
