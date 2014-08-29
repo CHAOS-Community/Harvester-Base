@@ -313,8 +313,8 @@ class ObjectShadow extends Shadow {
 			if($response->MCM()->TotalCount() == 1) {
 				$results = $response->MCM()->Results();
 				$this->object = $results[0];
+				$harvester->info("Created a new object in the service with GUID = %s.", $this->object->GUID);
 				return $this->object;
-				$harvester->info("Created a new object in the service with GUID = %s.", $object->GUID);
 			} else {
 				throw new RuntimeException("The service didn't respond with a single object when creating it.");
 			}
