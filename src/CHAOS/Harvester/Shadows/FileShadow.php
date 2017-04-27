@@ -96,7 +96,7 @@ class FileShadow extends Shadow {
 			return false;
 		} elseif($this->formatID != $file->FormatID) {
 			return false;
-		} elseif(strstr($file->URL, $this->folderPath) === false) {
+		} elseif($this->folderPath && strstr($file->URL, $this->folderPath) === false) {
 			// This actually depends on how the destination is specified in the chaos service.
 			return false;
 		} elseif($this->URL != null && $file->URL != $this->URL) {

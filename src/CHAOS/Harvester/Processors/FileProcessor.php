@@ -125,8 +125,12 @@ abstract class FileProcessor extends Processor implements \CHAOS\Harvester\Loada
 	 * @param string $url The URL to extract it from.
 	 */
 	protected function extractURLPathinfo($url) {
+		$pathinfo = pathinfo($url);
+		if($pathinfo['dirname'] === '/') {
+			$pathinfo['dirname'] = '';
+		}
 		// Default implementation
-		return pathinfo($url);
+		return $pathinfo;
 	}
-	
+
 }
