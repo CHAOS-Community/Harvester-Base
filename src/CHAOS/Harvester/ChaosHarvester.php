@@ -566,10 +566,6 @@ class ChaosHarvester {
 
 				// Execute the mode!
 				$this->_modes[$mode]->execute();
-				
-				// The all mode triggers a clean up!
-				$this->cleanUp();
-				
 			} else if($this->_modes[$mode] instanceof Modes\SingleByReferenceMode || $this->_modes[$mode] instanceof Modes\SetByReferenceMode) {
 				if(!key_exists('reference', $this->_options)) {
 					trigger_error('You have to specify a --reference={reference} in the '.$mode.' mode.', E_USER_ERROR);
@@ -582,6 +578,13 @@ class ChaosHarvester {
 			} else {
 				throw new RuntimeException("Mode type is not supported.");
 			}
+
+			if($this->_modes[$mode]->shouldCleanUp()) {
+				$this->cleanUp();
+			} else {
+				self::info("Skipping clean-up, as it's not supported by this mode.");
+			}
+
 		} else {
 			throw new RuntimeException("Mode '$mode' is not supported, please choose from: ".implode(', ', array_keys($this->_modes)));
 		}

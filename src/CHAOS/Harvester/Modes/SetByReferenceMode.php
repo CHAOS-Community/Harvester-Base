@@ -6,4 +6,8 @@ abstract class SetByReferenceMode extends Mode {
 	 * @param string $reference Some reference to a set of external entities, usually a string or integer.
 	 */
 	public abstract function execute($reference);
+
+	public function shouldCleanUp() {
+		return false;
+	}
 }
