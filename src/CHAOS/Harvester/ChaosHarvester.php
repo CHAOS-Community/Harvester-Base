@@ -12,65 +12,65 @@ use CHAOS\Portal\Client\PortalClient;
 use \RuntimeException, \Exception, \SimpleXMLElement, \DOMDocument;
 
 class ChaosHarvester {
-	
+
 	static function main($arguments = array()) {
 		self::printLogo();
 		$h = new ChaosHarvester($arguments);
 		print("---------- Harvester successfully constructed ----------\n");
 		$h->start();
 	}
-	
+
 	/** @var SessionRefreshingPortalClient */
 	protected $_chaos;
-	
+
 	/** @var array[string]string */
 	protected $_chaosParameters;
-	
+
 	/** @var array[string]string */
 	protected $_options;
-	
+
 	/** @var Mode[string] */
 	protected $_modes;
-	
+
 	/** @var CHAOS\Harvester\Processors\Processor[string] */
 	protected $_processors;
-	
+
 	/** @var ExternalClient[string] */
 	protected $_externalClients;
-	
+
 	/** @var SimpleXMLElement */
 	protected $_configuration;
-	
+
 	/** @var string[][] */
 	protected $_cleanUp = array(
 		'objectGUIDsConsidered' => array(),
 		'folderIDs' => array()
 	);
-	
+
 	function __construct($arguments = array()) {
 		$this->_options = self::extractOptionsFromArguments($arguments);
-		
+
 		// Check for the configuration option
 		if(!key_exists('configuration', $this->_options)) {
 			trigger_error("Fatal error: The configuration runtime argument was expected.", E_USER_ERROR);
 			self::printUsage();
 			exit;
 		}
-		
+
 		// Use this configuration option to check for the file.
 		$configurationFile = $this->_options['configuration'];
 		if(!is_readable($configurationFile)) {
 			trigger_error("Fatal error: The configuration file ($configurationFile) given as runtime argument is unreadable.", E_USER_ERROR);
 			self::printUsage();
 		}
-		
+
 		// Load the configuration file.
 		$this->_configuration = simplexml_load_file($configurationFile, null, null, 'chc', true);
 		if(!$this->validateConfiguration($this->_configuration)) {
 			trigger_error("Fatal error: The configuration file given is invalid.");
 			self::printUsage();
 		}
-		
+
 		// Load variables from environment.
 		$environmentTags = $this->_configuration->xpath('//*[@fromEnvironment]');
 		foreach($environmentTags as $t) {
@@ -82,34 +82,34 @@ class ChaosHarvester {
 				trigger_error(sprintf("The configuration file tells that an %s tag should be fetched from the %s environment variable, but this is not sat.", $t->getName(), $environmentVariable), E_USER_WARNING);
 			}
 		}
-		
+
 		// Notify which harvester was just started.
 		self::info("Starting the harvester for the '%s' project of %s.", $this->_configuration->Project, $this->_configuration->Organisation);
-		
+
 		if(date_default_timezone_set($this->_configuration->Timezone) === false) {
 			trigger_error("Fatal error: The configuration's timezone was invalid, read http://dk2.php.net/manual/en/timezones.php");
 		}
 
 		// Append include paths from configuration.
 		$this->processIncludePath();
-		
+
 		// Reuse the case sensitive autoloader.
 		require_once('CaseSensitiveAutoload.php');
-		
+
 		// Register this autoloader.
 		spl_autoload_extensions(".php");
 		spl_autoload_register("CaseSensitiveAutoload");
-		
+
 		// Require the timed lib to time actions.
 		require_once('timed.php');
 		timed(); // Tick tack, time is ticking.
-		
+
 		// Parsing external clients
 		$this->_externalClients = array();
 		foreach($this->_configuration->xpath("chc:ExternalClient") as $client) {
 			/* @var $filter SimpleXMLElement */
 			$attributes = $client->attributes();
-			
+
 			$name = strval($attributes->name);
 			//var_dump($methodName);
 			$namespace = strval($attributes->namespace);
@@ -122,7 +122,7 @@ class ChaosHarvester {
 				$params[strval($parameterAttributes->name)] = strval($parameter);
 			}
 			$this->loadExternalClient($name, $namespace, $className, $params);
-			
+
 			try {
 				if(!$this->_externalClients[$name]->sanityCheck()) {
 					throw new \RuntimeException("Unknown error during sanity check.");
@@ -131,7 +131,7 @@ class ChaosHarvester {
 				throw new \RuntimeException("External client '$name' failed the sanity check.", null, $e);
 			}
 		}
-		
+
 		// Parsing chaos configurations
 		$this->_chaosParameters = array();
 		foreach($this->_configuration->xpath("chc:ChaosConfiguration/*") as $parameter) {
@@ -144,20 +144,20 @@ class ChaosHarvester {
 		$servicePath = $this->_chaosParameters['URL'];
 		$this->info("Using CHAOS service: %s", $servicePath);
 		$this->_chaos = new SessionRefreshingPortalClient($this, $servicePath, $this->_chaosParameters['ClientGUID']);
-		
+
 		$this->authenticateChaosSession();
-		
+
 		// Parsing modes.
 		$this->_modes = array();
 		foreach($this->_configuration->xpath("chc:Modes/chc:Mode") as $mode) {
 			/* @var $mode SimpleXMLElement */
 			$attributes = $mode->attributes();
-			
+
 			$name = strval($attributes->name);
 			$type = strval($attributes->type);
 			$namespace = strval($attributes->namespace);
 			$className = strval($attributes->className);
-			
+
 			$parameters = $mode->xpath("chc:Parameter");
 			$params = array();
 			foreach($parameters as $parameter) {
@@ -165,21 +165,21 @@ class ChaosHarvester {
 				$parameterAttributes = $parameter->attributes();
 				$params[strval($parameterAttributes->name)] = strval($parameter);
 			}
-			
+
 			$this->loadMode($name, $type, $namespace, $className, $params);
 		}
-		
+
 		// Parsing processors
 		$this->_processors = array();
 		foreach($this->_configuration->xpath("chc:Processors/chc:*") as $processor) {
 			/* @var $processor SimpleXMLElement */
 			$attributes = $processor->attributes();
-				
+
 			$name = strval($attributes->name);
 			$type = $processor->getName();
 			$namespace = strval($attributes->namespace);
 			$className = strval($attributes->className);
-			
+
 			$parameters = $processor->xpath("chc:Parameter");
 			$params = array();
 			foreach($parameters as $parameter) {
@@ -188,31 +188,31 @@ class ChaosHarvester {
 				$params[strval($parameterAttributes->name)] = strval($parameter);
 			}
 			$this->loadProcessor($name, $type, $namespace, $className, $params);
-			
+
 			// Set the parameters which are specific to the processor.
 			if($type === 'ObjectProcessor') {
 				$objectTypeId = $processor->xpath('chc:ObjectTypeId');
 				$this->_processors[$name]->setObjectTypeId(intval(strval($objectTypeId[0])));
-				
+
 				$folderId = $processor->xpath('chc:FolderId');
 				$this->_processors[$name]->setFolderId(intval(strval($folderId[0])));
-				
+
 				$publishSettings = $processor->xpath('chc:PublishSettings');
-				
+
 				$publishSettings = $publishSettings[0];
 				$this->_processors[$name]->setUnpublishEverywhere(strval($publishSettings->attributes()->UnpublishEverywhere) === 'true');
-				
+
 				$unpublishAccesspoints = $publishSettings->xpath('chc:UnpublishAccesspoint');
 				$unpublishAccesspoints = array_map(function($accesspoint) { return trim($accesspoint); }, $unpublishAccesspoints);
 				$this->_processors[$name]->setUnpublishAccesspointGUIDs($unpublishAccesspoints);
-				
+
 				$publishAccesspoints = $publishSettings->xpath('chc:PublishAccesspoint');
 				$publishAccesspoints = array_map(function($accesspoint) { return trim($accesspoint); }, $publishAccesspoints);
 				$this->_processors[$name]->setPublishAccesspointGUIDs($publishAccesspoints);
 			} elseif($type === 'MetadataProcessor') {
 				$validate = $processor->xpath('chc:validate');
 				$this->_processors[$name]->setValidate(strval($validate[0]) == 'true');
-				
+
 				$schemaGUID = $processor->xpath('chc:schemaGUID');
 				$schemaLocation = $processor->xpath('chc:schemaLocation');
 				if(count($schemaGUID) == 1 && strlen(trim($schemaGUID[0])) > 0) {
@@ -225,7 +225,7 @@ class ChaosHarvester {
 			} elseif($type === 'FileProcessor') {
 				$formatId = $processor->xpath('chc:FormatId');
 				$this->_processors[$name]->setFormatId(intval(strval($formatId[0])));
-				
+
 				$destinationElements = $processor->xpath('chc:Destination');
 				$destinations = array();
 				foreach($destinationElements as $destination) {
@@ -241,20 +241,20 @@ class ChaosHarvester {
 			} else {
 				throw new \Exception("Loading an unknown type of processor: $type");
 			}
-			
+
 			// TODO: Fix!
 			$preprocessors = array();
 			foreach($processor->xpath("chc:PreProcessor") as $preprocessor) {
 				$preprocessors[] = strval($preprocessor);
 			}
 			$this->_processors[$name]->setPreProcessorsNames($preprocessors);
-			
+
 			// Parsing filters
 			$filters = array();
 			foreach($processor->xpath("chc:Filters/chc:Filter") as $filter) {
 				/* @var $filter SimpleXMLElement */
 				$filterAttributes = $filter->attributes();
-					
+
 				$filterName = strval($filterAttributes->name);
 				//var_dump($methodName);
 				$filterNamespace = strval($filterAttributes->namespace);
@@ -274,30 +274,30 @@ class ChaosHarvester {
 					/* @var $mode SimpleXMLElement */
 					$params['ignoreInModes'][] = strval($mode);
 				}
-				
+
 				if(key_exists($filterName, $filters)) {
 					throw new RuntimeException("A filter by the name of '$filterName' is already loaded.");
 				} else {
 					$filters[$filterName] = $this->loadFilter($filterName, $filterNamespace, $filterClassName, $params);
 				}
 			}
-			
+
 			// Parsing the embedded filters.
 			foreach($processor->xpath("chc:Filters/chc:EmbeddedFilter") as $filter) {
 				/* @var $filter SimpleXMLElement */
 				$filterAttributes = $filter->attributes();
-					
+
 				$filterName = strval($filterAttributes->name);
 				$filterLanguage = strval($filterAttributes->language);
 				if($filterLanguage != 'PHP') {
 					trigger_error("Cannot use an embedded filter which is not written in PHP.", E_USER_WARNING);
 				}
-				
+
 				if(key_exists($filterName, $filters)) {
 					throw new RuntimeException("A filter by the name of '$filterName' is already loaded.");
 				} else {
 					$filterObject = $this->loadFilter($filterName, '\CHAOS\Harvester\Filters', 'EmbeddedFilter');
-					
+
 					$filters[$filterName] = $filterObject;
 					/* @var $filterObject EmbeddedFilter */
 					if($filterObject instanceof EmbeddedFilter) {
@@ -307,19 +307,19 @@ class ChaosHarvester {
 					}
 				}
 			}
-			
+
 			$this->_processors[$name]->setFilters($filters);
 		}
 		// Change directory to the configuration's base path.
 		chdir(strval($this->_configuration->BasePath));
 	}
-	
+
 	/*
 	public function custom_external_entity_loader($public, $system, $context) {
 		var_dump($system);
 	}
 	*/
-	
+
 	protected static function extractOptionsFromArguments($arguments) {
 		$result = array();
 		for($i = 0; $i < count($arguments); $i++) {
@@ -343,11 +343,11 @@ class ChaosHarvester {
 		}
 		return $result;
 	}
-	
+
 	protected static function printUsage() {
 		printf("Usage: --configuration=[Path to XML configuration file]\n");
 	}
-	
+
 	protected static function printLogo() {
 		echo " ______________                      \n";
 		echo " __  ____/__  /_______ ______________\n";
@@ -357,7 +357,7 @@ class ChaosHarvester {
 		echo " Harvester v.0.2                     \n";
 		echo "\n";
 	}
-	
+
 	public static function generateGUID() {
 		mt_srand((double)microtime()*10000); // optional for php 4.2.0 and up.
 		$charid = strtoupper(md5(uniqid(rand(), true)));
@@ -370,13 +370,13 @@ class ChaosHarvester {
 			.substr($charid,20,12);
 		return $uuid;
 	}
-	
+
 	public function info() {
 		$args = func_get_args();
 		$args[0] = sprintf("[i] %s\n", $args[0]);
 		call_user_func_array('printf', $args);
 	}
-	
+
 	public function debug() {
 		if(key_exists('debug', $this->_options)) {
 			$args = func_get_args();
@@ -384,15 +384,15 @@ class ChaosHarvester {
 			call_user_func_array('printf', $args);
 		}
 	}
-	
+
 	public function getOptions() {
 		return $this->_options;
 	}
-	
+
 	public function hasOption($name) {
 		return key_exists($name, $this->_options);
 	}
-	
+
 	public function getOption($name) {
 		if($name == null || !key_exists($name, $this->_options)) {
 			return null;
@@ -400,7 +400,7 @@ class ChaosHarvester {
 			return $this->_options[$name];
 		}
 	}
-	
+
 	/**
 	 * Validates the configuration
 	 * @param SimpleXMLElement $configuration
@@ -410,15 +410,15 @@ class ChaosHarvester {
 		if($configuration == null || ! $configuration instanceof SimpleXMLElement) {
 			throw new RuntimeException("Error parsing configuration.");
 		}
-		
+
 		$schemaLocation = realpath(__DIR__ . '/../../../schemas/ChaosHarvesterConfiguration.xsd');
-		
+
 		// Validate the configuration file, against the schema.
 		$dom_document = new DOMDocument();
 		$dom_element = dom_import_simplexml($configuration);
 		$dom_element = $dom_document->importNode($dom_element, true);
 		$dom_element = $dom_document->appendChild($dom_element);
-		
+
 		if (!$dom_document->schemaValidate($schemaLocation)) {
 			trigger_error("The configuration file was invalid.", E_USER_ERROR);
 		} else {
@@ -426,7 +426,7 @@ class ChaosHarvester {
 		}
 		return true;
 	}
-	
+
 	protected function processIncludePath() {
 		foreach($this->_configuration->IncludePaths->path as $path) {
 			$resolvedPath = $this->resolvePath($path);
@@ -437,7 +437,7 @@ class ChaosHarvester {
 			}
 		}
 	}
-	
+
 	/**
 	 * Resolves a path to some filename or folder, possibly appending the BasePath of the configuration.
 	 * @param string $path
@@ -461,15 +461,15 @@ class ChaosHarvester {
 		// We found nothing interesting ...
 		return null;
 	}
-	
+
 	protected function loadClass($name, $namespace, $className, $requiredSuperclasses = array(), $requiredInterfaces = array(), $parameters = array()) {
 		$requiredInterfaces[] = 'CHAOS\Harvester\Loadable';
 		$class = $namespace . "\\" . $className;
-		
+
 		if(!class_exists($class, true)) {
 			throw new RuntimeException("Error loading class $class for the '$name' Loadable.");
 		}
-		
+
 		$parents = class_parents($class, true);
 		foreach($requiredSuperclasses as $c) {
 			if(!key_exists($c, $parents)) {
@@ -485,7 +485,7 @@ class ChaosHarvester {
 		// We came this far ..
 		return new $class($this, $name, $parameters);
 	}
-	
+
 	/**
 	 * Loads a mode into the harvester.
 	 * @param string $name
@@ -503,7 +503,7 @@ class ChaosHarvester {
 			$this->_modes[$name] = $mode;
 		}
 	}
-	
+
 	protected function loadProcessor($name, $type, $namespace, $className, $parameters = null) {
 		$processorSuperclass = sprintf('CHAOS\Harvester\Processors\%s', $type);
 		$processor = $this->loadClass($name, $namespace, $className, array($processorSuperclass), array(), $parameters);
@@ -513,11 +513,11 @@ class ChaosHarvester {
 			$this->_processors[$name] = $processor;
 		}
 	}
-	
+
 	protected function loadFilter($name, $namespace, $className, $parameters = array()) {
 		return $this->loadClass($name, $namespace, $className, array('CHAOS\Harvester\Filters\Filter'), array(), $parameters);
 	}
-	
+
 	protected function loadExternalClient($name, $namespace, $className, $parameters) {
 		$externalClient = $this->loadClass($name, $namespace, $className, array(), array('CHAOS\Harvester\IExternalClient'), $parameters);
 		if(key_exists($name, $this->_externalClients)) {
@@ -526,7 +526,7 @@ class ChaosHarvester {
 			$this->_externalClients[$name] = $externalClient;
 		}
 	}
-	
+
 	/**
 	 * Authenticate the Chaos session using the environment variables for email and password.
 	 * @throws \RuntimeException If the authentication fails.
@@ -542,14 +542,14 @@ class ChaosHarvester {
 			self::info("Chaos session was successfully authenticated: %s", $this->_chaos->SessionGUID());
 		}
 	}
-	
+
 	/**
 	 * @return \CHAOS\Portal\Client\IPortalClient The current chaos client.
 	 */
 	public function getChaosClient() {
 		return $this->_chaos;
 	}
-	
+
 	/**
 	 * Starts the harvester in a selected mode, this mode has to match a name in the given configuration file.
 	 * @param string $mode The name of the mode to start the harvester in.
@@ -559,22 +559,19 @@ class ChaosHarvester {
 		if($mode == null && key_exists('mode', $this->_options)) {
 			$mode = $this->getMode();
 		}
-		
+
 		if(key_exists($mode, $this->_modes)) {
 			self::info("Starting harvester in '%s' mode.", $mode);
 			if($this->_modes[$mode] instanceof Modes\AllMode) {
-
 				// Execute the mode!
 				$this->_modes[$mode]->execute();
 			} else if($this->_modes[$mode] instanceof Modes\SingleByReferenceMode || $this->_modes[$mode] instanceof Modes\SetByReferenceMode) {
 				if(!key_exists('reference', $this->_options)) {
 					trigger_error('You have to specify a --reference={reference} in the '.$mode.' mode.', E_USER_ERROR);
 				}
-				
 				// Execute the mode!
 				$reference = $this->_options['reference'];
 				$this->_modes[$mode]->execute($reference);
-				
 			} else {
 				throw new RuntimeException("Mode type is not supported.");
 			}
@@ -588,30 +585,30 @@ class ChaosHarvester {
 		} else {
 			throw new RuntimeException("Mode '$mode' is not supported, please choose from: ".implode(', ', array_keys($this->_modes)));
 		}
-		
+
 		$this->printProcessingExceptions();
-		
+
 		echo "\n";
 		echo "All done - ";
 		timed_print();
 	}
-	
+
 	public function getMode() {
 		return $this->_options['mode'];
 	}
-	
+
 	/**
 	 * An array describing the processing exceptions thrown during any processing.
 	 * @var array[]
 	 */
 	protected $processingExceptions = array();
-	
+
 	public function printProcessingExceptions() {
 		printf("\n");
-		
+
 		$total = count($this->processingExceptions);
 		if($total > 0) {
-			$this->info("Printing a summary of %u exceptions, thrown while processing:", $total);	
+			$this->info("Printing a summary of %u exceptions, thrown while processing:", $total);
 			$e = 1;
 			foreach($this->processingExceptions as $exception) {
 				$traceString = implode("\n\t", explode("\n", $exception['exception']->getTraceAsString()));
@@ -633,7 +630,7 @@ class ChaosHarvester {
 			$this->info("No exceptions was thrown while processing.");
 		}
 	}
-	
+
 	public function registerProcessingException($exception, $externalObject, $shadow, $processorName = null) {
 		trigger_error(sprintf("%s\n%s", $exception->getMessage(), $exception->getTraceAsString()), E_USER_WARNING);
 		$this->processingExceptions[] = array(
@@ -643,7 +640,7 @@ class ChaosHarvester {
 				"processorName" => $processorName
 		);
 	}
-	
+
 	/**
 	 * Invoke a registered processor.
 	 * @param string $processorName The name of the processor to invoke.
@@ -690,7 +687,7 @@ class ChaosHarvester {
 			}
 		}
 	}
-	
+
 	/**
 	 * This method is called by the Shadow\ObjectShadow when an object is either published or unpublished.
 	 * These objects GUID are saved for cleanup if the mode is an All mode.
@@ -700,7 +697,7 @@ class ChaosHarvester {
 		assert(property_exists($object, 'GUID'));
 		$this->_cleanUp['objectGUIDsConsidered'][] = $object->GUID;
 	}
-	
+
 	/**
 	 * Loops through all folder IDs used by any processor invoked, and unpublishes
 	 * all objects from any accesspoint which has not been touched by the harvester
@@ -708,13 +705,13 @@ class ChaosHarvester {
 	 */
 	public function cleanUp() {
 		printf("\n");
-		
+
 		$this->info("Cleaing up: Looping through objects in touched CHAOS folders, to ensure nothing is published which shouldn't be.");
 		$objectGUIDsConsidered = $this->_cleanUp['objectGUIDsConsidered'];
 		// Instead of cleaning up from the ids of the processed folder ids - take this information from the configuration.
 		// $folderIDs = $this->_cleanUp['folderIDs'];
 		$folderIDs = $this->_configuration->xpath("chc:Processors/chc:ObjectProcessor/chc:FolderId/text()");
-		
+
 		// Loop through all the folder IDs and get all objects from CHAOS, which are published.
 		foreach($folderIDs as $folderID) {
 			$folderID = strval($folderID);
@@ -736,7 +733,7 @@ class ChaosHarvester {
 						foreach($object->AccessPoints as $accesspoint) {
 							$unpublishAccesspointGUIDs[] = $accesspoint->AccessPointGUID;
 						}
-						
+
 						foreach($unpublishAccesspointGUIDs as $accesspointGUID) {
 							$this->info(sprintf("Unpublishing %s from accesspoint = %s", $object->GUID, $accesspointGUID));
 							$response = $this->getChaosClient()->Object()->SetPublishSettings($object->GUID, $accesspointGUID);
@@ -757,7 +754,7 @@ class ChaosHarvester {
 			} while($pageIndex * $pageSize < $response->MCM()->TotalCount());
 		}
 	}
-	
+
 	public function getExternalClient($name) {
 		if(key_exists($name, $this->_externalClients)) {
 			return $this->_externalClients[$name];

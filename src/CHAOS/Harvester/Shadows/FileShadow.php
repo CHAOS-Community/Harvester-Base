@@ -1,34 +1,34 @@
 <?php
 namespace CHAOS\Harvester\Shadows;
 class FileShadow extends Shadow {
-	
+
 	public $formatID;
 	public $destinationID;
 	public $filename;
 	public $originalFilename;
 	public $folderPath;
-	
+
 	// This should actually be possible to derive from the destinationID and $folderPath and $filename.
 	public $URL;
-	
+
 	/**
-	 * 
+	 *
 	 * @var \CHAOS\Harvester\Shadows\FileShadow
 	 */
 	public $parentFileShadow;
-	
+
 	/**
 	 * If only the parent file id is known.
 	 * @var int
 	 */
 	public $parentFileID;
-	
+
 	protected $file;
-	
+
 	public function getFile() {
 		return $file;
 	}
-	
+
 	public function getFileID() {
 		if($this->file && $this->file->ID) {
 			return $this->file->ID;
@@ -36,20 +36,20 @@ class FileShadow extends Shadow {
 			return null;
 		}
 	}
-	
+
 	public function commit($harvester, $parent = null) {
 		if($this->file != null) {
 			$harvester->debug("Asked to commit a shadow of a file that has already been committed.");
 			return $this->file;
 		}
-		
+
 		$harvester->debug("Committing the shadow of a file.");
-		
+
 		if($parent == null || !$parent instanceof ObjectShadow) {
 			trigger_error('The shadow given as $parent argument has to be initialized and of type Object Shadow');
 		}
 		$object = $parent->get($harvester);
-		
+
 		$file = array_filter($object->Files, array($this, 'matchFile'));
 		if(count($file) == 1) {
 			$file = array_pop($file);
@@ -59,7 +59,7 @@ class FileShadow extends Shadow {
 		} else {
 			$file = null;
 		}
-		
+
 		if($file != null) {
 			// File already exists in the service.
 			$harvester->debug('Reusing file '.$file->ID);
@@ -73,7 +73,7 @@ class FileShadow extends Shadow {
 			if($this->parentFileID != null) {
 				$harvester->debug('This file is a child of the file with ID = '.$this->parentFileID);
 			}
-			
+
 			$response = $harvester->getChaosClient()->File()->Create($object->GUID, $this->parentFileID, $this->formatID, $this->destinationID, $this->filename, $this->originalFilename, $this->folderPath);
 			assert($response instanceof \CHAOS\Portal\Client\Data\ServiceResult);
 			if(!$response->WasSuccess()) {
@@ -89,7 +89,7 @@ class FileShadow extends Shadow {
 		}
 		return $this->file;
 	}
-	
+
 	protected function matchFile($file) {
 		//return $file->URL == $this->URL;
 		if($this->originalFilename != $file->OriginalFilename) {
@@ -107,8 +107,8 @@ class FileShadow extends Shadow {
 			return true;
 		}
 	}
-	
-	
+
+
 	/**
 	 * Generates a function that can be used in an array_filter to select just the files
 	 * with same original filename.

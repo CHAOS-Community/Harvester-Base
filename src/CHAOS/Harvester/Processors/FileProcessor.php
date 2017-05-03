@@ -8,13 +8,13 @@ use CHAOS\Harvester\Shadows\ObjectShadow;
 use \RuntimeException;
 
 abstract class FileProcessor extends Processor implements \CHAOS\Harvester\Loadable {
-	
+
 	/**
 	 * The ID of the format to use when creating files.
 	 * @var int
 	 */
 	protected $_formatId;
-	
+
 	/**
 	 * Set the format id to use when creating files.
 	 * @param unknown_type $formatId
@@ -22,13 +22,13 @@ abstract class FileProcessor extends Processor implements \CHAOS\Harvester\Loada
 	public function setFormatId($formatId) {
 		$this->_formatId = $formatId;
 	}
-	
+
 	/**
 	 * The ID of the destination to use when creating files.
 	 * @var string[][]
 	 */
 	protected $_destinations;
-	
+
 	/**
 	 * Set the destinations to use when creating files.
 	 * @param unknown_type $destinationId
@@ -36,15 +36,15 @@ abstract class FileProcessor extends Processor implements \CHAOS\Harvester\Loada
 	public function setDestinations($destinations) {
 		$this->_destinations = $destinations;
 	}
-	
+
 	public function createFileShadowFromURL($url) {
 		$url = strval($url);
 		// Check if a destination exists that can be used for this file.
 		foreach($this->_destinations as $destination) {
 			$baseURL = $destination['baseURL'];
-			//$this->_harvester->debug("Trying '%s' as basepath for '%s'.", $baseURL, $url);
+			// $this->_harvester->debug("Trying '%s' as basepath for '%s'.", $baseURL, $url);
 			if(preg_match("#$baseURL(.*)#", $url, $matches)) {
-				//$this->_harvester->debug("Success!");
+				// $this->_harvester->debug("Success!");
 				// We found a matching destination
 				if(!$this->shouldCheckFileExistance() || $this->externalFileExists($url)) {
 					$pathinfo = $this->extractURLPathinfo($matches[1]);
@@ -56,7 +56,7 @@ abstract class FileProcessor extends Processor implements \CHAOS\Harvester\Loada
 		}
 		return null;
 	}
-	
+
 	/**
 	 * Create a FileShadow representing the parameters given as arguments.
 	 * @param string $folderPath The folder path of the file.
@@ -78,9 +78,9 @@ abstract class FileProcessor extends Processor implements \CHAOS\Harvester\Loada
 		$result->parentFileID = $parentFileID;
 		return $result;
 	}
-	
+
 	protected $fileExistsCurlHandle = null;
-	
+
 	/**
 	 * Checks if an external file exists or not.
 	 * @param unknown_type $fileURL
@@ -101,7 +101,7 @@ abstract class FileProcessor extends Processor implements \CHAOS\Harvester\Loada
 		timed('checking-file-existance');
 		return $result;
 	}
-	
+
 	/**
 	 * Given a response string with the header of a cURL call on a particular URL, determine if this file exists or not.
 	 * @param string $response The response from a cURL call.
@@ -111,7 +111,7 @@ abstract class FileProcessor extends Processor implements \CHAOS\Harvester\Loada
 	protected function concludeFileExistance($response) {
 		throw new \Exception("concludeFileExistance was not implemented by the specialization.");
 	}
-	
+
 	/**
 	 * If the configuration says that the harvester should check for the existance of files for a particular file processor, this returns true.
 	 * @return boolean True if the existance of the file should infact be checked.
@@ -119,7 +119,7 @@ abstract class FileProcessor extends Processor implements \CHAOS\Harvester\Loada
 	protected function shouldCheckFileExistance() {
 		return key_exists('CheckFileExistance', $this->_parameters) && $this->_parameters['CheckFileExistance'] == 'true';
 	}
-	
+
 	/**
 	 * Extract the pathinfo of a url, overwrite this method to manipulate the pathinfo before its used in chaos.
 	 * @param string $url The URL to extract it from.
