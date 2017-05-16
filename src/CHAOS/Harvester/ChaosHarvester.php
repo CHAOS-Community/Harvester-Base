@@ -231,8 +231,8 @@ class ChaosHarvester {
 				foreach($destinationElements as $destination) {
 					$destinations[] = array(
 						"name" => strval($destination->attributes()->name),
-						"id" => intval(array_pop($destination->xpath('chc:id'))),
-						"baseURL" => strval(array_pop($destination->xpath('chc:baseURL')))
+						"id" => intval($destination->xpath('chc:id')[0]),
+						"baseURL" => strval($destination->xpath('chc:baseURL')[0])
 					);
 				}
 				$this->_processors[$name]->setDestinations($destinations);
