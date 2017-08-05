@@ -100,7 +100,7 @@ class ObjectShadow extends Shadow {
 		}
 		
 		
-		if(true) {
+		if($this->skipped !== true) {
 			// Get or create the object, while saving it to the object itself.
 			$this->ensureChaosObject($harvester);
 
