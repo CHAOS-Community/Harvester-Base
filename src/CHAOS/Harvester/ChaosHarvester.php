@@ -612,9 +612,9 @@ class ChaosHarvester {
 			$e = 1;
 			foreach($this->processingExceptions as $exception) {
 				$traceString = implode("\n\t", explode("\n", $exception['exception']->getTraceAsString()));
-				if(strlen(trim(strval($exception['externalObject']))) > 0) {
+				if(isset($exception['externalObject']) && (is_object($exception['externalObject']) && in_array("__toString", get_class_methods($exception['externalObject']))) && strlen(trim(strval($exception['externalObject']))) > 0) {
 					$title = trim(strval($exception['externalObject']));
-				} elseif(strlen(trim(strval($exception['shadow']))) > 0) {
+				} elseif(isset($exception['shadow']) && strlen(trim(strval($exception['shadow']))) > 0) {
 					$title = trim(strval($exception['shadow']));
 				} else {
 					$title = "[some unnamed object]";
