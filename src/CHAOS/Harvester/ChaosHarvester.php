@@ -65,7 +65,7 @@ class ChaosHarvester {
 		}
 
 		// Load the configuration file.
-		$this->_configuration = simplexml_load_file($configurationFile, null, null, 'chc', true);
+		$this->_configuration = simplexml_load_file($configurationFile, null, 0, 'chc', true);
 		if(!$this->validateConfiguration($this->_configuration)) {
 			trigger_error("Fatal error: The configuration file given is invalid.");
 			self::printUsage();
@@ -359,7 +359,6 @@ class ChaosHarvester {
 	}
 
 	public static function generateGUID() {
-		mt_srand((double)microtime()*10000); // optional for php 4.2.0 and up.
 		$charid = strtoupper(md5(uniqid(rand(), true)));
 		$hyphen = chr(45); // "-"
 		$uuid = ''
